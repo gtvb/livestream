@@ -2,13 +2,13 @@ FROM golang:latest
 
 WORKDIR /app
 
-COPY go.mod go.sum ./
+COPY . .
+
+RUN go mod tidy
+
 RUN go mod download
-
-COPY *.go ./
-
 RUN CGO_ENABLED=0 GOOS=linux go build -o /ls-server
 
-EXPOSE 8080
+EXPOSE 3333
 
 CMD ["/ls-server"]

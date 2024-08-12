@@ -12,6 +12,10 @@ import (
 
 const LiveStreamsCollectionName = "livestreams"
 
+// Repositório de acesso aos dados da entidade `LiveStream`.
+// Qualquer repositório precisa implementar a interface
+// `LiveStreamRepositoryInterface` para ser utilizada de forma
+// válida pelo servidor HTTP.
 type LiveStreamRepository struct {
 	Db *db.Database
 }

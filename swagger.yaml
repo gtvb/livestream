@@ -1,0 +1,67 @@
+consumes:
+    - application/json
+info:
+    description: Documentação da API de liveStreams
+    title: LiveStreamAPI
+    version: 1.0.0
+paths:
+    /users/login:
+        post:
+            description: Realiza o login de um usuário e gera um token para futuras operações protegidas
+            operationId: loginUser
+            parameters:
+                - in: body
+                  name: Body
+                  schema:
+                    properties:
+                        email:
+                            type: string
+                            x-go-name: Email
+                        password:
+                            type: string
+                            x-go-name: Password
+                    type: object
+            responses:
+                "200":
+                    $ref: '#/responses/tokenResponse'
+            tags:
+                - users
+    /users/signup:
+        post:
+            description: Realiza o signup de um usuário e gera um token para futuras operações protegidas
+            operationId: signupUser
+            parameters:
+                - in: body
+                  name: Body
+                  schema:
+                    properties:
+                        email:
+                            type: string
+                            x-go-name: Email
+                        name:
+                            type: string
+                            x-go-name: Name
+                        password:
+                            type: string
+                            x-go-name: Password
+                    type: object
+            responses:
+                "200":
+                    $ref: '#/responses/tokenResponse'
+            tags:
+                - users
+responses:
+    tokenResponse:
+        description: ""
+        headers:
+            Body:
+                description: O token JWT usado para próximas requisições protegidas
+        schema:
+            properties:
+                token:
+                    type: string
+                    x-go-name: Token
+            type: object
+schemes:
+    - http
+swagger: "2.0"

@@ -1,32 +1,33 @@
 services:
   ls-server: 
+    container_name: ls-server
     build: .
     ports:
-      - 8080:8080
+      - 3333:3333
 
-  mongo:
-    image: mongo
-    restart: always
-    ports:
-      - 27017:27017
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: rootpass
+    depends_on:
+      - mongo
 
   nginx-rtmp:
+    container_name: nginx
     build:
       context: ./nginx
       args:
         ENABLED_MODULES: rtmp
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      # - ./nginx/index.html:/usr/share/nginx/html/index.html # Keep this if you want the stream to be tested on a locally served nginx html page
     ports:
       - 8000:8000
       - 1936:1935
+    depends_on:
+      - ls-server
 
-    develop:
-      watch:
-        - action: sync
-          path: ./nginx.conf
-          target: /etc/nginx/
+  mongo:
+    container_name: database
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpass
+    ports:
+      - 27017:27017

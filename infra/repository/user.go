@@ -12,12 +12,16 @@ import (
 
 const UserCollectionName = "users"
 
+// Repositório de acesso aos dados da entidade `User`.
+// Qualquer repositório precisa implementar a interface
+// `UserRepositoryInterface` para ser utilizada de forma
+// válida pelo servidor HTTP.
 type UserRepository struct {
 	Db *db.Database
 }
 
-func NewUserRepository(db *db.Database) *LiveStreamRepository {
-	return &LiveStreamRepository{
+func NewUserRepository(db *db.Database) *UserRepository {
+	return &UserRepository{
 		Db: db,
 	}
 }
@@ -108,4 +112,62 @@ func (ur *UserRepository) UpdateUserPassword(id int, password string) (bool, err
 	}
 
 	return true, nil
+}
+
+func (ur *UserRepository) UpdateUserAddLiveStream(id int, ls *models.LiveStream) (bool, error) {
+	// coll := ur.Db.Collection(UserCollectionName)
+	// user, err := ur.GetUserById(id)
+	// if err != nil {
+	// 	return false, nil
+	// }
+
+	// user.AddLiveStream(ls)
+	return false, nil
+}
+
+func (ur *UserRepository) GetUserByEmail(email string) (*models.User, error) {
+	coll := ur.Db.Collection(UserCollectionName)
+	filter := bson.M{"email": email}
+
+	res := coll.FindOne(context.TODO(), filter)
+
+	var user models.User
+	err := res.Decode(&user)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (ur *UserRepository) GetUserById(id int) (*models.User, error) {
+	coll := ur.Db.Collection(UserCollectionName)
+	filter := bson.M{"_id": id}
+
+	res := coll.FindOne(context.TODO(), filter)
+
+	var user models.User
+	err := res.Decode(&user)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (ur *UserRepository) GetAllUsers() ([]*models.User, error) {
+	coll := ur.Db.Collection(UserCollectionName)
+	filter := bson.D{}
+
+	cursor, err := coll.Find(context.TODO(), filter)
+	if err != nil {
+		return nil, err
+	}
+
+	var users []*models.User
+	if err = cursor.All(context.TODO(), &users); err != nil {
+		return nil, err
+	}
+
+	return users, nil
 }

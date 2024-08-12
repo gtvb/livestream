@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 
-	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -13,22 +12,33 @@ type Database struct {
 	*mongo.Database
 }
 
-func NewDb() (*mongo.Database, error) {
-	err := godotenv.Load()
-	if err != nil {
-		return nil, err
-	}
-
+// Inicia uma nova conexão com o banco Mongo, já
+// selecionando a Database contida na variável de 
+// ambiente MONGODB_DATABASE_NAME.
+func NewDb() (*Database, error) {
 	mongoUri := os.Getenv("MONGODB_CONNECTION_STRING")
 	mongoDatabaseName := os.Getenv("MONGODB_DATABASE_NAME")
+	mongoUser := os.Getenv("MONGODB_USERNAME")
+	mongoPassword := os.Getenv("MONGODB_PASSWORD")
 
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(mongoUri))
+	client, err := mongo.Connect(context.TODO(),
+		options.Client().
+			ApplyURI(mongoUri).
+			SetAuth(options.Credential{
+				Username: mongoUser,
+				Password: mongoPassword,
+			}))
+
 	if err != nil {
 		return nil, err
 	}
-	defer client.Disconnect(context.TODO())
+
+	err = client.Ping(context.TODO(), options.Client().ReadPreference)
+	if err != nil {
+		return nil, err
+	}
 
 	database := client.Database(mongoDatabaseName)
 
-	return database, nil
+	return &Database{database}, nil
 }
