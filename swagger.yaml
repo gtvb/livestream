@@ -145,7 +145,7 @@ paths:
             operationId: updateUser
             responses:
                 "200":
-                    $ref: '#/responses/userResponse'
+                    $ref: '#/responses/messageResponse'
                 "400":
                     $ref: '#/responses/messageResponse'
             tags:

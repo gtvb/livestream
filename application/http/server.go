@@ -38,9 +38,9 @@ func RunServer(lr models.LiveStreamRepositoryInterface, ur models.UserRepository
 	users.POST("/login", env.login)
 	users.POST("/signup", env.signup)
 	users.GET("/all", env.getAllUsers)
+	users.GET("/:id", authMiddleware(), env.getUserProfile)
 	users.DELETE("/delete", authMiddleware(), env.deleteUser)
 	users.PATCH("/update", authMiddleware(), env.updateUser)
-	users.GET("/:id", authMiddleware(), env.getUserProfile)
 
 	streams := router.Group("/livestream")
 	streams.POST("/create", authMiddleware(), env.createLiveStream)
