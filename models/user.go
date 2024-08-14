@@ -2,31 +2,31 @@ package models
 
 import (
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type UserRepositoryInterface interface {
 	CreateUser(name, email, password string) (interface{}, error)
-	DeleteUser(id int) (bool, error)
-	UpdateUserName(id int, name string) (bool, error)
-	UpdateUserEmail(id int, email string) (bool, error)
-	UpdateUserPassword(id int, password string) (bool, error)
-	UpdateUserAddLiveStream(id int, ls *LiveStream) (bool, error)
+	DeleteUser(id primitive.ObjectID) (bool, error)
+
+	UpdateUserName(id primitive.ObjectID, name string) (bool, error)
+	UpdateUserEmail(id primitive.ObjectID, email string) (bool, error)
+	UpdateUserPassword(id primitive.ObjectID, password string) (bool, error)
+
 	GetUserByEmail(email string) (*User, error)
-	GetUserById(id int) (*User, error)
-	// Helper
+	GetUserById(id primitive.ObjectID) (*User, error)
 	GetAllUsers() ([]*User, error)
 }
 
 type User struct {
-	ID       int `bson:"_id"`
-	Name     string
-	Email    string
-	Password string
+	ID       primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	Name     string             `json:"name"`
+	Email    string             `json:"email"`
+	Password string             `json:"password"`
 
-	CreatedAt time.Time `bson:"created_at"`
-	UpdatedAt time.Time `bson:"updated_at"`
-
-	LiveStreams []*LiveStream `bson:"live_streams"`
+	CreatedAt time.Time `bson:"created_at" json:"created_at"`
+	UpdatedAt time.Time `bson:"updated_at" json:"updated_at"`
 }
 
 func NewUser(name, email, password string) *User {
@@ -35,11 +35,6 @@ func NewUser(name, email, password string) *User {
 		Email:    email,
 		Password: password,
 
-		CreatedAt:   time.Now(),
-		LiveStreams: make([]*LiveStream, 0),
+		CreatedAt: time.Now(),
 	}
-}
-
-func (user *User) AddLiveStream(ls *LiveStream) {
-	user.LiveStreams = append(user.LiveStreams, ls)
 }

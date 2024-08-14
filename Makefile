@@ -1,4 +1,4 @@
-GO_PATH=~/go
+GO_PATH=$(HOME)/go
 SWAGGER_CMD=$(GO_PATH)/bin/swagger
 
 swagger_check:

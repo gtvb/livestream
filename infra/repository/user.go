@@ -8,6 +8,7 @@ import (
 	"github.com/gtvb/livestream/infra/db"
 	"github.com/gtvb/livestream/models"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 const UserCollectionName = "users"
@@ -30,15 +31,15 @@ func (ur *UserRepository) CreateUser(name, email, password string) (interface{},
 	coll := ur.Db.Collection(UserCollectionName)
 	doc := models.NewUser(name, email, password)
 
-	res, err := coll.InsertOne(context.TODO(), doc)
+	id, err := coll.InsertOne(context.TODO(), doc)
 	if err != nil {
-		return nil, err
+		return primitive.NilObjectID, err
 	}
 
-	return res.InsertedID, nil
+	return id.InsertedID, nil
 }
 
-func (ur *UserRepository) DeleteUser(id int) (bool, error) {
+func (ur *UserRepository) DeleteUser(id primitive.ObjectID) (bool, error) {
 	coll := ur.Db.Collection(UserCollectionName)
 	filter := bson.M{"_id": id}
 
@@ -54,7 +55,7 @@ func (ur *UserRepository) DeleteUser(id int) (bool, error) {
 	return true, nil
 }
 
-func (ur *UserRepository) UpdateUserName(id int, name string) (bool, error) {
+func (ur *UserRepository) UpdateUserName(id primitive.ObjectID, name string) (bool, error) {
 	coll := ur.Db.Collection(UserCollectionName)
 	update := bson.M{"$set": bson.M{"name": name, "updated_at": time.Now()}}
 
@@ -74,7 +75,7 @@ func (ur *UserRepository) UpdateUserName(id int, name string) (bool, error) {
 	return true, nil
 }
 
-func (ur *UserRepository) UpdateUserEmail(id int, email string) (bool, error) {
+func (ur *UserRepository) UpdateUserEmail(id primitive.ObjectID, email string) (bool, error) {
 	coll := ur.Db.Collection(UserCollectionName)
 	update := bson.M{"$set": bson.M{"email": email, "updated_at": time.Now()}}
 
@@ -94,7 +95,7 @@ func (ur *UserRepository) UpdateUserEmail(id int, email string) (bool, error) {
 	return true, nil
 }
 
-func (ur *UserRepository) UpdateUserPassword(id int, password string) (bool, error) {
+func (ur *UserRepository) UpdateUserPassword(id primitive.ObjectID, password string) (bool, error) {
 	coll := ur.Db.Collection(UserCollectionName)
 	update := bson.M{"$set": bson.M{"password": password, "updated_at": time.Now()}}
 
@@ -114,17 +115,6 @@ func (ur *UserRepository) UpdateUserPassword(id int, password string) (bool, err
 	return true, nil
 }
 
-func (ur *UserRepository) UpdateUserAddLiveStream(id int, ls *models.LiveStream) (bool, error) {
-	// coll := ur.Db.Collection(UserCollectionName)
-	// user, err := ur.GetUserById(id)
-	// if err != nil {
-	// 	return false, nil
-	// }
-
-	// user.AddLiveStream(ls)
-	return false, nil
-}
-
 func (ur *UserRepository) GetUserByEmail(email string) (*models.User, error) {
 	coll := ur.Db.Collection(UserCollectionName)
 	filter := bson.M{"email": email}
@@ -140,7 +130,7 @@ func (ur *UserRepository) GetUserByEmail(email string) (*models.User, error) {
 	return &user, nil
 }
 
-func (ur *UserRepository) GetUserById(id int) (*models.User, error) {
+func (ur *UserRepository) GetUserById(id primitive.ObjectID) (*models.User, error) {
 	coll := ur.Db.Collection(UserCollectionName)
 	filter := bson.M{"_id": id}
 

@@ -12,11 +12,11 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 
-	"github.com/go-chi/chi/middleware"
-	"github.com/go-chi/chi/v5"
+	"github.com/gin-gonic/gin"
 	"github.com/gtvb/livestream/models"
 )
 
@@ -32,17 +32,34 @@ func RunServer(lr models.LiveStreamRepositoryInterface, ur models.UserRepository
 		userRepository:        ur,
 	}
 
-	router := chi.NewRouter()
-	router.Use(middleware.Logger)
+	router := gin.Default()
 
-	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello Go!"))
+	users := router.Group("/user")
+	users.POST("/login", env.login)
+	users.POST("/signup", env.signup)
+	users.GET("/all", env.getAllUsers)
+	users.DELETE("/delete", authMiddleware(), env.deleteUser)
+	users.PATCH("/update", authMiddleware(), env.updateUser)
+	users.GET("/:id", authMiddleware(), env.getUserProfile)
+
+	streams := router.Group("/livestream")
+	streams.POST("/create", authMiddleware(), env.createLiveStream)
+	streams.DELETE("/delete", authMiddleware(), env.deleteLiveStream)
+	streams.PATCH("/update", authMiddleware(), env.updateLiveStream)
+	streams.GET("/:user_id", authMiddleware(), env.getUserLiveStreams)
+
+	streams.POST("/publish_auth", func(ctx *gin.Context) {
+		var body interface{}
+
+		if err := ctx.ShouldBindBodyWithJSON(&body); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "could not parse body"})
+			return
+		}
+
+		fmt.Println(body)
+
+		ctx.JSON(http.StatusOK, gin.H{"message": "allowed to proceed"})
 	})
 
-	router.Route("/users", func(router chi.Router) {
-		router.Post("/login", env.login)
-		router.Post("/signup", env.signup)
-	})
-
-	http.ListenAndServe(":"+os.Getenv("SERVER_PORT"), router)
+	router.Run(":" + os.Getenv("SERVER_PORT"))
 }

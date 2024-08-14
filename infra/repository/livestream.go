@@ -8,6 +8,7 @@ import (
 	"github.com/gtvb/livestream/infra/db"
 	"github.com/gtvb/livestream/models"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 const LiveStreamsCollectionName = "livestreams"
@@ -26,9 +27,9 @@ func NewLiveStreamRepository(db *db.Database) *LiveStreamRepository {
 	}
 }
 
-func (lr *LiveStreamRepository) CreateLiveStream(name string) (interface{}, error) {
+func (lr *LiveStreamRepository) CreateLiveStream(name string, publisherId primitive.ObjectID) (interface{}, error) {
 	coll := lr.Db.Collection(LiveStreamsCollectionName)
-	doc := models.NewLiveStream(name)
+	doc := models.NewLiveStream(name, publisherId)
 
 	res, err := coll.InsertOne(context.TODO(), doc)
 	if err != nil {
@@ -38,7 +39,7 @@ func (lr *LiveStreamRepository) CreateLiveStream(name string) (interface{}, erro
 	return res.InsertedID, nil
 }
 
-func (lr *LiveStreamRepository) DeleteLiveStream(id int) (bool, error) {
+func (lr *LiveStreamRepository) DeleteLiveStream(id primitive.ObjectID) (bool, error) {
 	coll := lr.Db.Collection(LiveStreamsCollectionName)
 	filter := bson.M{"_id": id}
 
@@ -54,7 +55,19 @@ func (lr *LiveStreamRepository) DeleteLiveStream(id int) (bool, error) {
 	return true, nil
 }
 
-func (lr *LiveStreamRepository) UpdateLiveStreamName(id int, name string) (bool, error) {
+func (lr *LiveStreamRepository) DeleteLiveStreamsByPublisher(id primitive.ObjectID) (bool, error) {
+	coll := lr.Db.Collection(LiveStreamsCollectionName)
+	filter := bson.M{"publisher_id": id}
+
+	_, err := coll.DeleteMany(context.TODO(), filter)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (lr *LiveStreamRepository) UpdateLiveStreamName(id primitive.ObjectID, name string) (bool, error) {
 	coll := lr.Db.Collection(LiveStreamsCollectionName)
 	update := bson.M{"$set": bson.M{"name": name, "updated_at": time.Now()}}
 
@@ -74,7 +87,7 @@ func (lr *LiveStreamRepository) UpdateLiveStreamName(id int, name string) (bool,
 	return true, nil
 }
 
-func (lr *LiveStreamRepository) IncrementLiveStreamUserCount(id int) (bool, error) {
+func (lr *LiveStreamRepository) IncrementLiveStreamUserCount(id primitive.ObjectID) (bool, error) {
 	coll := lr.Db.Collection(LiveStreamsCollectionName)
 	update := bson.M{
 		"$set": bson.M{"updated_at": time.Now()},
@@ -97,7 +110,7 @@ func (lr *LiveStreamRepository) IncrementLiveStreamUserCount(id int) (bool, erro
 	return true, nil
 }
 
-func (lr *LiveStreamRepository) DecrementLiveStreamUserCount(id int) (bool, error) {
+func (lr *LiveStreamRepository) DecrementLiveStreamUserCount(id primitive.ObjectID) (bool, error) {
 	coll := lr.Db.Collection(LiveStreamsCollectionName)
 	update := bson.M{
 		"$set": bson.M{"updated_at": time.Now()},
@@ -136,6 +149,24 @@ func (lr *LiveStreamRepository) GetLiveStreamByName(name string) (*models.LiveSt
 	}
 
 	return &liveStream, nil
+}
+
+func (lr *LiveStreamRepository) GetAllLiveStreamsByUserId(id primitive.ObjectID) ([]*models.LiveStream, error) {
+	coll := lr.Db.Collection(LiveStreamsCollectionName)
+	filter := bson.M{"publisher_id": id}
+
+	cursor, err := coll.Find(context.TODO(), filter)
+	if err != nil {
+		return nil, err
+	}
+
+	var liveStreams []*models.LiveStream
+	err = cursor.All(context.TODO(), &liveStreams)
+	if err != nil {
+		return nil, err
+	}
+
+	return liveStreams, nil
 }
 
 // This is a generic method, just so we can display a
