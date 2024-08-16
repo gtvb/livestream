@@ -39,111 +39,88 @@ func (lr *LiveStreamRepository) CreateLiveStream(name string, publisherId primit
 	return res.InsertedID, nil
 }
 
-func (lr *LiveStreamRepository) DeleteLiveStream(id primitive.ObjectID) (bool, error) {
+func (lr *LiveStreamRepository) DeleteLiveStream(id primitive.ObjectID) error {
 	coll := lr.Db.Collection(LiveStreamsCollectionName)
 	filter := bson.M{"_id": id}
 
 	res, err := coll.DeleteOne(context.TODO(), filter)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	if res.DeletedCount != 1 {
-		return false, fmt.Errorf("expected one document to be deleted, got %d", res.DeletedCount)
+		return fmt.Errorf("expected one document to be deleted, got %d", res.DeletedCount)
 	}
 
-	return true, nil
+	return nil
 }
 
-func (lr *LiveStreamRepository) DeleteLiveStreamsByPublisher(id primitive.ObjectID) (bool, error) {
+func (lr *LiveStreamRepository) DeleteLiveStreamsByPublisher(id primitive.ObjectID) error {
 	coll := lr.Db.Collection(LiveStreamsCollectionName)
 	filter := bson.M{"publisher_id": id}
 
 	_, err := coll.DeleteMany(context.TODO(), filter)
 	if err != nil {
-		return false, err
+		return err
 	}
 
-	return true, nil
+	return nil
 }
 
-func (lr *LiveStreamRepository) UpdateLiveStreamName(id primitive.ObjectID, name string) (bool, error) {
+func (lr *LiveStreamRepository) updateLiveStream(id primitive.ObjectID, updateQuery primitive.M) error {
 	coll := lr.Db.Collection(LiveStreamsCollectionName)
-	update := bson.M{"$set": bson.M{"name": name, "updated_at": time.Now()}}
 
-	res, err := coll.UpdateByID(context.TODO(), id, update)
+	res, err := coll.UpdateByID(context.TODO(), id, updateQuery)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	if res.MatchedCount != 1 {
-		return false, fmt.Errorf("no match for _id %d", id)
+		return fmt.Errorf("no match for _id %d", id)
 	}
 
 	if res.ModifiedCount != 1 {
-		return false, fmt.Errorf("expected one document to be updated, got %d", res.ModifiedCount)
+		return fmt.Errorf("expected one document to be updated, got %d", res.ModifiedCount)
 	}
 
-	return true, nil
+	return nil
 }
 
-func (lr *LiveStreamRepository) IncrementLiveStreamUserCount(id primitive.ObjectID) (bool, error) {
-	coll := lr.Db.Collection(LiveStreamsCollectionName)
+func (lr *LiveStreamRepository) UpdateLiveStreamSetStatus(id primitive.ObjectID, status bool) error {
+	update := bson.M{"$set": bson.M{"live_stream_status": status, "updated_at": time.Now()}}
+    return lr.updateLiveStream(id, update)
+}
+
+func (lr *LiveStreamRepository) UpdateLiveStreamName(id primitive.ObjectID, name string) error {
+	update := bson.M{"$set": bson.M{"name": name, "updated_at": time.Now()}}
+    return lr.updateLiveStream(id, update)
+}
+
+func (lr *LiveStreamRepository) IncrementLiveStreamUserCount(id primitive.ObjectID) error {
 	update := bson.M{
 		"$set": bson.M{"updated_at": time.Now()},
 		"$inc": bson.M{"viewer_count": 1},
 	}
-
-	res, err := coll.UpdateByID(context.TODO(), id, update)
-	if err != nil {
-		return false, err
-	}
-
-	if res.MatchedCount != 1 {
-		return false, fmt.Errorf("no match for _id %d", id)
-	}
-
-	if res.ModifiedCount != 1 {
-		return false, fmt.Errorf("expected one document to be updated, got %d", res.ModifiedCount)
-	}
-
-	return true, nil
+    return lr.updateLiveStream(id, update)
 }
 
-func (lr *LiveStreamRepository) DecrementLiveStreamUserCount(id primitive.ObjectID) (bool, error) {
-	coll := lr.Db.Collection(LiveStreamsCollectionName)
+
+func (lr *LiveStreamRepository) DecrementLiveStreamUserCount(id primitive.ObjectID) error {
 	update := bson.M{
 		"$set": bson.M{"updated_at": time.Now()},
 		"$dec": bson.M{"viewer_count": 1},
 	}
-
-	res, err := coll.UpdateByID(context.TODO(), id, update)
-	if err != nil {
-		return false, err
-	}
-
-	if res.MatchedCount != 1 {
-		return false, fmt.Errorf("no match for _id %d", id)
-	}
-
-	if res.ModifiedCount != 1 {
-		return false, fmt.Errorf("expected one document to be updated, got %d", res.ModifiedCount)
-	}
-
-	return true, nil
+    return lr.updateLiveStream(id, update)
 }
 
-func (lr *LiveStreamRepository) GetLiveStreamByName(name string) (*models.LiveStream, error) {
-	coll := lr.Db.Collection(LiveStreamsCollectionName)
-	filter := bson.M{"name": name}
-
-	cursor, err := coll.Find(context.TODO(), filter)
-	if err != nil {
-		return nil, err
-	}
-
+func (lr *LiveStreamRepository) getLiveStreamByParam(fieldName string, param any) (*models.LiveStream, error) {
 	var liveStream models.LiveStream
-	err = cursor.Decode(&liveStream)
+	coll := lr.Db.Collection(LiveStreamsCollectionName)
+
+    filter := bson.M{fieldName: param}
+
+	res := coll.FindOne(context.TODO(), filter)
+    err := res.Decode(&liveStream)
 	if err != nil {
 		return nil, err
 	}
@@ -151,17 +128,16 @@ func (lr *LiveStreamRepository) GetLiveStreamByName(name string) (*models.LiveSt
 	return &liveStream, nil
 }
 
-func (lr *LiveStreamRepository) GetAllLiveStreamsByUserId(id primitive.ObjectID) ([]*models.LiveStream, error) {
+func (lr *LiveStreamRepository) getLiveStreamByParamBatch(filter primitive.M) ([]*models.LiveStream, error) {
+	var liveStreams []*models.LiveStream
 	coll := lr.Db.Collection(LiveStreamsCollectionName)
-	filter := bson.M{"publisher_id": id}
 
 	cursor, err := coll.Find(context.TODO(), filter)
 	if err != nil {
 		return nil, err
 	}
 
-	var liveStreams []*models.LiveStream
-	err = cursor.All(context.TODO(), &liveStreams)
+    err = cursor.Decode(&liveStreams)
 	if err != nil {
 		return nil, err
 	}
@@ -169,24 +145,23 @@ func (lr *LiveStreamRepository) GetAllLiveStreamsByUserId(id primitive.ObjectID)
 	return liveStreams, nil
 }
 
-// This is a generic method, just so we can display a
-// significant number of streams on the client for
-// testing purposes. Later on, we could add tagging
-// capabilities, or even expand to more complex searching
-// techniques
+func (lr *LiveStreamRepository) GetLiveStreamById(id primitive.ObjectID) (*models.LiveStream, error) {
+    return lr.getLiveStreamByParam("_id", id)
+}
+
+func (lr *LiveStreamRepository) GetLiveStreamByName(name string) (*models.LiveStream, error) {
+    return lr.getLiveStreamByParam("name", name)
+}
+
+func (lr *LiveStreamRepository) GetLiveStreamByStreamKey(key string) (*models.LiveStream, error) {
+    return lr.getLiveStreamByParam("stream_key", key)
+}
+
+func (lr *LiveStreamRepository) GetAllLiveStreamsByUserId(id primitive.ObjectID) ([]*models.LiveStream, error) {
+    return lr.getLiveStreamByParamBatch(bson.M{"publisher_id": id})
+}
+
+// Método genérico, pode ser substituído por uma busca mais específica
 func (lr *LiveStreamRepository) GetAllLiveStreams() ([]*models.LiveStream, error) {
-	coll := lr.Db.Collection(LiveStreamsCollectionName)
-
-	cursor, err := coll.Find(context.TODO(), bson.D{{}})
-	if err != nil {
-		return nil, err
-	}
-
-	var liveStreams []*models.LiveStream
-	err = cursor.All(context.TODO(), &liveStreams)
-	if err != nil {
-		return nil, err
-	}
-
-	return liveStreams, nil
+    return lr.getLiveStreamByParamBatch(bson.M{})
 }

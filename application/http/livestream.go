@@ -3,6 +3,7 @@ package http
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gtvb/livestream/models"
@@ -81,7 +82,21 @@ func (env *ServerEnv) createLiveStream(ctx *gin.Context) {
 // 404: messageResponse
 // 500: messageResponse
 func (env *ServerEnv) deleteLiveStream(ctx *gin.Context) {
-	ctx.JSON(http.StatusOK, gin.H{"message": "test"})
+	streamId := ctx.Param("stream_id")
+
+	id, err := primitive.ObjectIDFromHex(streamId)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = env.liveStreamsRepository.DeleteLiveStream(id)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
 }
 
 // swagger:route PATCH /livestream/update/:id livestreams updateLiveStream
@@ -93,5 +108,76 @@ func (env *ServerEnv) deleteLiveStream(ctx *gin.Context) {
 // 404: messageResponse
 // 500: messageResponse
 func (env *ServerEnv) updateLiveStream(ctx *gin.Context) {
-	ctx.JSON(http.StatusOK, gin.H{"message": "test"})
+	streamId := ctx.Param("stream_id")
+
+	id, err := primitive.ObjectIDFromHex(streamId)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	status := ctx.Query("status")
+	name := ctx.Query("name")
+
+	if status == "" && name == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "need one update paramater"})
+		return
+	}
+
+	if status != "" {
+		// TODO: verify error
+		statusBool, _ := strconv.ParseBool(status)
+		err := env.liveStreamsRepository.UpdateLiveStreamSetStatus(id, statusBool)
+
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			return
+		}
+	}
+
+	if name != "" {
+		// TODO: verify error
+		err := env.liveStreamsRepository.UpdateLiveStreamName(id, name)
+
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			return
+		}
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "succecss"})
+}
+
+func (env *ServerEnv) getLiveStreamData(ctx *gin.Context) {
+	streamId := ctx.Param("stream_id")
+
+	id, err := primitive.ObjectIDFromHex(streamId)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	livestream, err := env.liveStreamsRepository.GetLiveStreamById(id)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"livestream": livestream})
+}
+
+func (env *ServerEnv) validateStream(ctx *gin.Context) {
+	streamKey := ctx.Query("name")
+
+	_, err := env.liveStreamsRepository.GetLiveStreamByStreamKey(streamKey)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			ctx.JSON(http.StatusNotFound, gin.H{"message": "invalid stream key"})
+		} else {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		}
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "allowed to proceed"})
 }

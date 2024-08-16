@@ -12,8 +12,6 @@
 package http
 
 import (
-	"fmt"
-	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -39,27 +37,16 @@ func RunServer(lr models.LiveStreamRepositoryInterface, ur models.UserRepository
 	users.POST("/signup", env.signup)
 	users.GET("/all", env.getAllUsers)
 	users.GET("/:id", authMiddleware(), env.getUserProfile)
-	users.DELETE("/delete", authMiddleware(), env.deleteUser)
-	users.PATCH("/update", authMiddleware(), env.updateUser)
+    users.DELETE("/delete/:user_id", authMiddleware(), env.deleteUser)
+    users.PATCH("/update/:user_id", authMiddleware(), env.updateUser)
 
-	streams := router.Group("/livestream")
+	streams := router.Group("/livestreams")
 	streams.POST("/create", authMiddleware(), env.createLiveStream)
-	streams.DELETE("/delete", authMiddleware(), env.deleteLiveStream)
-	streams.PATCH("/update", authMiddleware(), env.updateLiveStream)
+    streams.DELETE("/delete/:stream_id", authMiddleware(), env.deleteLiveStream)
+    streams.PATCH("/update/:stream_id", authMiddleware(), env.updateLiveStream)
 	streams.GET("/:user_id", authMiddleware(), env.getUserLiveStreams)
-
-	streams.POST("/publish_auth", func(ctx *gin.Context) {
-		var body interface{}
-
-		if err := ctx.ShouldBindBodyWithJSON(&body); err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"message": "could not parse body"})
-			return
-		}
-
-		fmt.Println(body)
-
-		ctx.JSON(http.StatusOK, gin.H{"message": "allowed to proceed"})
-	})
+    streams.GET("/info/:stream_id", authMiddleware(), env.getLiveStreamData)
+	streams.GET("/validate", env.validateStream)
 
 	router.Run(":" + os.Getenv("SERVER_PORT"))
 }

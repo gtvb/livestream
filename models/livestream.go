@@ -9,15 +9,18 @@ import (
 
 type LiveStreamRepositoryInterface interface {
 	CreateLiveStream(name string, publisherId primitive.ObjectID) (interface{}, error)
-	DeleteLiveStream(id primitive.ObjectID) (bool, error)
-	DeleteLiveStreamsByPublisher(id primitive.ObjectID) (bool, error)
+	DeleteLiveStream(id primitive.ObjectID) error
+	DeleteLiveStreamsByPublisher(id primitive.ObjectID) error
 
-	UpdateLiveStreamName(id primitive.ObjectID, name string) (bool, error)
-	IncrementLiveStreamUserCount(id primitive.ObjectID) (bool, error)
-	DecrementLiveStreamUserCount(id primitive.ObjectID) (bool, error)
+	UpdateLiveStreamName(id primitive.ObjectID, name string) error
+	UpdateLiveStreamSetStatus(id primitive.ObjectID, status bool) error
+	IncrementLiveStreamUserCount(id primitive.ObjectID) error
+	DecrementLiveStreamUserCount(id primitive.ObjectID) error
 
 	GetAllLiveStreamsByUserId(id primitive.ObjectID) ([]*LiveStream, error)
+	GetLiveStreamById(id primitive.ObjectID) (*LiveStream, error)
 	GetLiveStreamByName(name string) (*LiveStream, error)
+	GetLiveStreamByStreamKey(key string) (*LiveStream, error)
 	GetAllLiveStreams() ([]*LiveStream, error)
 }
 
@@ -27,6 +30,8 @@ type LiveStream struct {
 	StreamKey   string             `bson:"stream_key" json:"stream_key"`
 	ViewerCount int                `bson:"viewer_count" json:"viewer_count"`
 	PublisherId primitive.ObjectID `bson:"publisher_id" json:"publisher_id"`
+
+	LiveStatus bool `bson:"live_stream_status" json:"live_stream_status"`
 
 	CreatedAt time.Time `bson:"created_at" json:"created_at"`
 	UpdatedAt time.Time `bson:"updated_at" json:"updated_at"`

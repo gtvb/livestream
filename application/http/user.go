@@ -223,13 +223,13 @@ func (env *ServerEnv) deleteUser(ctx *gin.Context) {
 		return
 	}
 
-	_, err = env.liveStreamsRepository.DeleteLiveStreamsByPublisher(objId)
+    err = env.liveStreamsRepository.DeleteLiveStreamsByPublisher(objId)
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "failed to delete all streams for this user"})
 		return
 	}
 
-	_, err = env.userRepository.DeleteUser(objId)
+	err = env.userRepository.DeleteUser(objId)
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "failed to delete this user"})
 		return
@@ -260,7 +260,7 @@ func (env *ServerEnv) updateUser(ctx *gin.Context) {
 		return
 	}
 
-	_, err = env.userRepository.UpdateUserName(objId, name)
+	err = env.userRepository.UpdateUserName(objId, name)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "falied to update this user's name"})
 		return

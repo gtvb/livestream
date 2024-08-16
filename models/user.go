@@ -8,11 +8,11 @@ import (
 
 type UserRepositoryInterface interface {
 	CreateUser(name, email, password string) (interface{}, error)
-	DeleteUser(id primitive.ObjectID) (bool, error)
+	DeleteUser(id primitive.ObjectID) error
 
-	UpdateUserName(id primitive.ObjectID, name string) (bool, error)
-	UpdateUserEmail(id primitive.ObjectID, email string) (bool, error)
-	UpdateUserPassword(id primitive.ObjectID, password string) (bool, error)
+	UpdateUserName(id primitive.ObjectID, name string) error
+	UpdateUserEmail(id primitive.ObjectID, email string) error
+	UpdateUserPassword(id primitive.ObjectID, password string) error
 
 	GetUserByEmail(email string) (*User, error)
 	GetUserById(id primitive.ObjectID) (*User, error)
