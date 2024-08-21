@@ -88,12 +88,12 @@ func (lr *LiveStreamRepository) updateLiveStream(id primitive.ObjectID, updateQu
 
 func (lr *LiveStreamRepository) UpdateLiveStreamSetStatus(id primitive.ObjectID, status bool) error {
 	update := bson.M{"$set": bson.M{"live_stream_status": status, "updated_at": time.Now()}}
-    return lr.updateLiveStream(id, update)
+	return lr.updateLiveStream(id, update)
 }
 
 func (lr *LiveStreamRepository) UpdateLiveStreamName(id primitive.ObjectID, name string) error {
 	update := bson.M{"$set": bson.M{"name": name, "updated_at": time.Now()}}
-    return lr.updateLiveStream(id, update)
+	return lr.updateLiveStream(id, update)
 }
 
 func (lr *LiveStreamRepository) IncrementLiveStreamUserCount(id primitive.ObjectID) error {
@@ -101,26 +101,25 @@ func (lr *LiveStreamRepository) IncrementLiveStreamUserCount(id primitive.Object
 		"$set": bson.M{"updated_at": time.Now()},
 		"$inc": bson.M{"viewer_count": 1},
 	}
-    return lr.updateLiveStream(id, update)
+	return lr.updateLiveStream(id, update)
 }
-
 
 func (lr *LiveStreamRepository) DecrementLiveStreamUserCount(id primitive.ObjectID) error {
 	update := bson.M{
 		"$set": bson.M{"updated_at": time.Now()},
 		"$dec": bson.M{"viewer_count": 1},
 	}
-    return lr.updateLiveStream(id, update)
+	return lr.updateLiveStream(id, update)
 }
 
 func (lr *LiveStreamRepository) getLiveStreamByParam(fieldName string, param any) (*models.LiveStream, error) {
 	var liveStream models.LiveStream
 	coll := lr.Db.Collection(LiveStreamsCollectionName)
 
-    filter := bson.M{fieldName: param}
+	filter := bson.M{fieldName: param}
 
 	res := coll.FindOne(context.TODO(), filter)
-    err := res.Decode(&liveStream)
+	err := res.Decode(&liveStream)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +136,7 @@ func (lr *LiveStreamRepository) getLiveStreamByParamBatch(filter primitive.M) ([
 		return nil, err
 	}
 
-    err = cursor.Decode(&liveStreams)
+	err = cursor.All(context.TODO(), &liveStreams)
 	if err != nil {
 		return nil, err
 	}
@@ -146,22 +145,22 @@ func (lr *LiveStreamRepository) getLiveStreamByParamBatch(filter primitive.M) ([
 }
 
 func (lr *LiveStreamRepository) GetLiveStreamById(id primitive.ObjectID) (*models.LiveStream, error) {
-    return lr.getLiveStreamByParam("_id", id)
+	return lr.getLiveStreamByParam("_id", id)
 }
 
 func (lr *LiveStreamRepository) GetLiveStreamByName(name string) (*models.LiveStream, error) {
-    return lr.getLiveStreamByParam("name", name)
+	return lr.getLiveStreamByParam("name", name)
 }
 
 func (lr *LiveStreamRepository) GetLiveStreamByStreamKey(key string) (*models.LiveStream, error) {
-    return lr.getLiveStreamByParam("stream_key", key)
+	return lr.getLiveStreamByParam("stream_key", key)
 }
 
 func (lr *LiveStreamRepository) GetAllLiveStreamsByUserId(id primitive.ObjectID) ([]*models.LiveStream, error) {
-    return lr.getLiveStreamByParamBatch(bson.M{"publisher_id": id})
+	return lr.getLiveStreamByParamBatch(bson.M{"publisher_id": id})
 }
 
 // Método genérico, pode ser substituído por uma busca mais específica
 func (lr *LiveStreamRepository) GetAllLiveStreams() ([]*models.LiveStream, error) {
-    return lr.getLiveStreamByParamBatch(bson.M{})
+	return lr.getLiveStreamByParamBatch(bson.M{})
 }

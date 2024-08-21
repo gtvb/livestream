@@ -11,7 +11,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Some Login description
+// Parâmetros para o login de um usuário
 // swagger:parameters loginUser
 type LoginParamsWrapper struct {
 	// in:body
@@ -21,12 +21,13 @@ type LoginParamsWrapper struct {
 	}
 }
 
-// Some Signup description
+// Parâmetros para o signup de um usuário
 // swagger:parameters signupUser
 type SignupParamsWrapper struct {
 	// in:body
 	Body struct {
 		Name     string `json:"name"`
+		Username string `json:"username"`
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
@@ -35,13 +36,17 @@ type SignupParamsWrapper struct {
 // swagger:response userResponse
 type UserResponseWrapper struct {
 	// in:body
-	Body models.User
+	Body struct {
+		User models.User `josn:"user"`
+	}
 }
 
 // swagger:response liveStreamsResponse
 type LiveStreamsResponseWrapper struct {
 	// in:body
-	Body []models.LiveStream
+	Body struct {
+		LiveStreams []models.LiveStream `json:"livestreams"`
+	}
 }
 
 // swagger:response tokenResponse
@@ -115,8 +120,9 @@ func (env *ServerEnv) login(ctx *gin.Context) {
 //	500: messageResponse
 func (env *ServerEnv) signup(ctx *gin.Context) {
 	var signupBody struct {
-		Name     string
 		Email    string
+		Name     string
+		Username string
 		Password string
 	}
 
@@ -143,8 +149,7 @@ func (env *ServerEnv) signup(ctx *gin.Context) {
 		return
 	}
 
-	newUser := models.NewUser(signupBody.Name, signupBody.Email, string(hashedPassword))
-	userId, err := env.userRepository.CreateUser(newUser.Name, newUser.Email, newUser.Password)
+	userId, err := env.userRepository.CreateUser(signupBody.Name, signupBody.Username, signupBody.Email, string(hashedPassword))
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -180,11 +185,11 @@ func (env *ServerEnv) getUserProfile(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, user)
+	ctx.JSON(http.StatusOK, gin.H{"user": user})
 }
 
 // swagger:route GET /livestream/:user_id users livestreams getUserLiveStreams
-// Realiza o login de um usuário e gera um token para futuras operações protegidas
+// Retorna todas as livestreams que pertencem ao usuário com id especificado por `user_id`
 //
 // responses:
 //
@@ -209,7 +214,7 @@ func (env *ServerEnv) getUserLiveStreams(ctx *gin.Context) {
 
 // swagger:route DELETE /user/:user_id users deleteUser
 // Remove um usuário da base de dados, juntamente com todas as liveStreams cadastradas
-// sobre seu mesmo id
+// sobre seu mesmo id (`user_id`).
 //
 // responses:
 //
@@ -223,7 +228,7 @@ func (env *ServerEnv) deleteUser(ctx *gin.Context) {
 		return
 	}
 
-    err = env.liveStreamsRepository.DeleteLiveStreamsByPublisher(objId)
+	err = env.liveStreamsRepository.DeleteLiveStreamsByPublisher(objId)
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": "failed to delete all streams for this user"})
 		return

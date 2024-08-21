@@ -27,9 +27,9 @@ func NewUserRepository(db *db.Database) *UserRepository {
 	}
 }
 
-func (ur *UserRepository) CreateUser(name, email, password string) (interface{}, error) {
+func (ur *UserRepository) CreateUser(name, username, email, password string) (interface{}, error) {
 	coll := ur.Db.Collection(UserCollectionName)
-	doc := models.NewUser(name, email, password)
+	doc := models.NewUser(name, username, email, password)
 
 	id, err := coll.InsertOne(context.TODO(), doc)
 	if err != nil {
@@ -43,18 +43,13 @@ func (ur *UserRepository) DeleteUser(id primitive.ObjectID) error {
 	coll := ur.Db.Collection(UserCollectionName)
 	filter := bson.M{"_id": id}
 
-	res, err := coll.DeleteOne(context.TODO(), filter)
+	_, err := coll.DeleteOne(context.TODO(), filter)
 	if err != nil {
 		return err
 	}
 
-	if res.DeletedCount != 1 {
-		return fmt.Errorf("expected one document to be deleted, got %d", res.DeletedCount)
-	}
-
 	return nil
 }
-
 
 func (ur *UserRepository) updateUser(id primitive.ObjectID, updateQuery primitive.M) error {
 	coll := ur.Db.Collection(UserCollectionName)
@@ -64,7 +59,7 @@ func (ur *UserRepository) updateUser(id primitive.ObjectID, updateQuery primitiv
 		return err
 	}
 
-	if res.MatchedCount != 1 {
+	if res.MatchedCount == 0 {
 		return fmt.Errorf("no match for _id %d", id)
 	}
 
@@ -75,30 +70,27 @@ func (ur *UserRepository) updateUser(id primitive.ObjectID, updateQuery primitiv
 	return nil
 }
 
-
 func (ur *UserRepository) UpdateUserName(id primitive.ObjectID, name string) error {
 	update := bson.M{"$set": bson.M{"name": name, "updated_at": time.Now()}}
-    return ur.updateUser(id, update)
+	return ur.updateUser(id, update)
 }
 
 func (ur *UserRepository) UpdateUserEmail(id primitive.ObjectID, email string) error {
 	update := bson.M{"$set": bson.M{"email": email, "updated_at": time.Now()}}
-    return ur.updateUser(id, update)
+	return ur.updateUser(id, update)
 }
 
 func (ur *UserRepository) UpdateUserPassword(id primitive.ObjectID, password string) error {
 	update := bson.M{"$set": bson.M{"password": password, "updated_at": time.Now()}}
-    return ur.updateUser(id, update)
+	return ur.updateUser(id, update)
 }
 
-func (ur *UserRepository) getUserByParam(fieldName string, param any) (*models.User, error) {
+func (ur *UserRepository) getUserByParam(filter primitive.M) (*models.User, error) {
 	var user models.User
-	coll := ur.Db.Collection(LiveStreamsCollectionName)
-
-    filter := bson.M{fieldName: param}
+	coll := ur.Db.Collection(UserCollectionName)
 
 	res := coll.FindOne(context.TODO(), filter)
-    err := res.Decode(&user)
+	err := res.Decode(&user)
 	if err != nil {
 		return nil, err
 	}
@@ -106,12 +98,17 @@ func (ur *UserRepository) getUserByParam(fieldName string, param any) (*models.U
 	return &user, nil
 }
 
+func (ur *UserRepository) GetUserByUsername(username string) (*models.User, error) {
+	// CHANGE name later
+	return ur.getUserByParam(bson.M{"username": username})
+}
+
 func (ur *UserRepository) GetUserByEmail(email string) (*models.User, error) {
-    return ur.getUserByParam("email", email)
+	return ur.getUserByParam(bson.M{"email": email})
 }
 
 func (ur *UserRepository) GetUserById(id primitive.ObjectID) (*models.User, error) {
-    return ur.getUserByParam("_id", id)
+	return ur.getUserByParam(bson.M{"_id": id})
 }
 
 func (ur *UserRepository) GetAllUsers() ([]*models.User, error) {

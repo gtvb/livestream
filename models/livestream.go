@@ -26,8 +26,8 @@ type LiveStreamRepositoryInterface interface {
 
 type LiveStream struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	Name        string             `json:"name"`
 	StreamKey   string             `bson:"stream_key" json:"stream_key"`
+	Name        string             `json:"name"`
 	ViewerCount int                `bson:"viewer_count" json:"viewer_count"`
 	PublisherId primitive.ObjectID `bson:"publisher_id" json:"publisher_id"`
 
@@ -39,12 +39,12 @@ type LiveStream struct {
 
 func NewLiveStream(name string, publisherId primitive.ObjectID) *LiveStream {
 	streamId, _ := uuid.NewV6()
-
 	return &LiveStream{
 		Name:        name,
-		ViewerCount: 0,
-		StreamKey:   streamId.String(),
 		PublisherId: publisherId,
+		LiveStatus:  false,
+		ViewerCount: 0,
+		StreamKey: streamId.String(),
 
 		CreatedAt: time.Now(),
 	}

@@ -2,13 +2,14 @@ package http
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gtvb/livestream/models"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // swagger:parameters createLiveStream
@@ -63,14 +64,13 @@ func (env *ServerEnv) createLiveStream(ctx *gin.Context) {
 		return
 	}
 
-	liveStream := models.NewLiveStream(createLiveStreamBody.Name, id)
-	_, err = env.liveStreamsRepository.CreateLiveStream(liveStream.Name, liveStream.PublisherId)
+	_, err = env.liveStreamsRepository.CreateLiveStream(createLiveStreamBody.Name, id)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, gin.H{"livestream_data": liveStream})
+	ctx.JSON(http.StatusCreated, gin.H{"message": "livestream created"})
 }
 
 // swagger:route DELETE /livestream/delete/:id livestreams deleteLiveStream
@@ -168,16 +168,41 @@ func (env *ServerEnv) getLiveStreamData(ctx *gin.Context) {
 
 func (env *ServerEnv) validateStream(ctx *gin.Context) {
 	streamKey := ctx.Query("name")
+	username := ctx.Query("username")
+	password := ctx.Query("password")
 
-	_, err := env.liveStreamsRepository.GetLiveStreamByStreamKey(streamKey)
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			ctx.JSON(http.StatusNotFound, gin.H{"message": "invalid stream key"})
-		} else {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		}
+	if username == "" || password == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "missing username/password combination"})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "allowed to proceed"})
+	// Verificar se usuário existe
+	user, err := env.userRepository.GetUserByUsername(username)
+	if err != nil {
+		fmt.Println("No username")
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	// Verificar se a senha está correta
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+		fmt.Println("No password correct")
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "incorrect password"})
+		return
+	}
+
+	// TODO: Utilizar a senha para criptografar a chave de stream. Após isso, verificar se
+	// existe alguma entrada correspondente à esse hash. Se sim, a stream é válida
+
+	fmt.Println(streamKey)
+	ls, err := env.liveStreamsRepository.GetLiveStreamByStreamKey(streamKey)
+	if err != nil {
+		fmt.Println("No Key")
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	// Redirecionar para a nova localização do arquivo
+	location := fmt.Sprintf("rtmp://127.0.0.1/hls-live/%s", ls.ID.Hex())
+	ctx.Redirect(http.StatusFound, location)
 }
