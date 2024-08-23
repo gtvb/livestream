@@ -11,63 +11,84 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Parâmetros para o login de um usuário
+// LoginParamsWrapper contains parameters for user login.
 // swagger:parameters loginUser
 type LoginParamsWrapper struct {
 	// in:body
 	Body struct {
-		Email    string `json:"email"`
+		// User's email
+		// required: true
+		Email string `json:"email"`
+		// User's password
+		// required: true
 		Password string `json:"password"`
 	}
 }
 
-// Parâmetros para o signup de um usuário
+// SignupParamsWrapper contains parameters for user signup.
 // swagger:parameters signupUser
 type SignupParamsWrapper struct {
 	// in:body
 	Body struct {
-		Name     string `json:"name"`
+		// User's name
+		// required: true
+		Name string `json:"name"`
+		// User's username
+		// required: true
 		Username string `json:"username"`
-		Email    string `json:"email"`
+		// User's email
+		// required: true
+		Email string `json:"email"`
+		// User's password
+		// required: true
 		Password string `json:"password"`
 	}
 }
 
+// UserResponseWrapper contains a user response.
 // swagger:response userResponse
 type UserResponseWrapper struct {
 	// in:body
 	Body struct {
-		User models.User `josn:"user"`
+		// The user details
+		User models.User `json:"user"`
 	}
 }
 
+// LiveStreamsResponseWrapper contains a response with live streams.
 // swagger:response liveStreamsResponse
 type LiveStreamsResponseWrapper struct {
 	// in:body
 	Body struct {
+		// List of live streams
 		LiveStreams []models.LiveStream `json:"livestreams"`
 	}
 }
 
+// TokenResponseWrapper contains a token response.
 // swagger:response tokenResponse
 type TokenResponseWrapper struct {
-	// O token JWT usado para próximas requisições protegidas
+	// The JWT token for future protected requests.
+	// required: true
 	Body struct {
 		Token string `json:"token"`
 	}
 }
 
+// MessageResponseWrapper contains a message response.
 // swagger:response messageResponse
 type MessageResponseWrapper struct {
 	Body struct {
+		// A descriptive message
 		Message string `json:"message"`
 	}
 }
 
 // swagger:route POST /users/login users loginUser
-// Realiza o login de um usuário e gera um token para futuras operações protegidas
 //
-// responses:
+// Login a user and generate a token for future protected operations.
+//
+// Responses:
 //
 //	200: tokenResponse
 //	400: messageResponse
@@ -84,7 +105,6 @@ func (env *ServerEnv) login(ctx *gin.Context) {
 		return
 	}
 
-	// Check against database
 	user, err := env.userRepository.GetUserByEmail(loginBody.Email)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -95,7 +115,6 @@ func (env *ServerEnv) login(ctx *gin.Context) {
 		return
 	}
 
-	// Compare passwords
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(loginBody.Password))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "passwords don't match"})
@@ -112,8 +131,10 @@ func (env *ServerEnv) login(ctx *gin.Context) {
 }
 
 // swagger:route POST /users/signup users signupUser
-// Realiza o signup de um usuário e gera um token para futuras operações protegidas
-// responses:
+//
+// Signup a user and generate a token for future protected operations.
+//
+// Responses:
 //
 //	201: tokenResponse
 //	400: messageResponse
@@ -131,7 +152,6 @@ func (env *ServerEnv) signup(ctx *gin.Context) {
 		return
 	}
 
-	// Check against database
 	user, err := env.userRepository.GetUserByEmail(signupBody.Email)
 	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
@@ -164,10 +184,11 @@ func (env *ServerEnv) signup(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, gin.H{"token": token})
 }
 
-// swagger:route GET /users/:id users getUserProfile
-// Retorna as informações sobre um usuário dado um id válido
+// swagger:route GET /users/{id} users getUserProfile
 //
-// responses:
+// Get user profile information given a valid id.
+//
+// Responses:
 //
 //	200: userResponse
 //	404: messageResponse
@@ -188,16 +209,18 @@ func (env *ServerEnv) getUserProfile(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"user": user})
 }
 
-// swagger:route GET /livestream/:user_id users livestreams getUserLiveStreams
-// Retorna todas as livestreams que pertencem ao usuário com id especificado por `user_id`
+// swagger:route GET /livestreams/{user_id} livestreams getUserLiveStreams
 //
-// responses:
+// Get all live streams that belong to the user specified by `user_id`.
+//
+// Responses:
 //
 //	200: liveStreamsResponse
 //	404: messageResponse
 func (env *ServerEnv) getUserLiveStreams(ctx *gin.Context) {
 	id := ctx.Param("user_id")
 	objId, err := primitive.ObjectIDFromHex(id)
+
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
 		return
@@ -212,16 +235,16 @@ func (env *ServerEnv) getUserLiveStreams(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"livestreams": livestreams})
 }
 
-// swagger:route DELETE /user/:user_id users deleteUser
-// Remove um usuário da base de dados, juntamente com todas as liveStreams cadastradas
-// sobre seu mesmo id (`user_id`).
+// swagger:route DELETE /users/{id} users deleteUser
 //
-// responses:
+// Delete a user from the database along with all their registered live streams.
+//
+// Responses:
 //
 //	200: messageResponse
 //	404: messageResponse
 func (env *ServerEnv) deleteUser(ctx *gin.Context) {
-	id := ctx.Param("user_id")
+	id := ctx.Param("id")
 	objId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
@@ -243,16 +266,16 @@ func (env *ServerEnv) deleteUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "user deleted"})
 }
 
-// swagger:route PATCH /user/:user_id users updateUser
-// Atualiza os dados do usuário identificado pelo `user_id` especificado
-// como parâmetro.
+// swagger:route PATCH /users/{id} users updateUser
 //
-// responses:
+// Update the user's data identified by the specified `id` parameter.
+//
+// Responses:
 //
 //	200: messageResponse
 //	400: messageResponse
 func (env *ServerEnv) updateUser(ctx *gin.Context) {
-	id := ctx.Param("user_id")
+	id := ctx.Param("id")
 	objId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
@@ -267,13 +290,21 @@ func (env *ServerEnv) updateUser(ctx *gin.Context) {
 
 	err = env.userRepository.UpdateUserName(objId, name)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "falied to update this user's name"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "failed to update this user's name"})
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "user updated"})
 }
 
+// swagger:route GET /users/all users getAllUsers
+//
+// Get all users.
+//
+// Responses:
+//
+//	200: []User
+//	500: messageResponse
 func (env *ServerEnv) getAllUsers(ctx *gin.Context) {
 	users, err := env.userRepository.GetAllUsers()
 	if err != nil {

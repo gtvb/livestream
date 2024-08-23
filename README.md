@@ -23,20 +23,23 @@ Isso irá executar os três serviços contidos no arquivo `compose.yml`
 - `nginx`: O serviço do `nginx` permite que usuários possam transmitir e consumir
 streams de forma eficiente.
 
-A API roda localmente na porta `8000`.
+O servidor de ingestão se econtra na porta `8000`. A API se encontra na porta `3333`.
 
 ### Documentação da API
 
-A documentação da API é feita utilizando o Swagger. Para acessar a documentação
-em um servidor local, é necessário ter a ferramenta `make` instalada.
+A documentação da API é feita utilizando o Swagger. Para acessar a documentação,
+execute os seguintes comandos (o ambiente já deve estar gerado seguindo a seção
+anterior).
 
 ```
-# caso haja alguma mudança na documentação da base de código, gere os modelos novamente
-make swagger
+# Para gerar o arquivo swagger.yaml (necessário pela primeira vez ou quando a documentação é atualizada.
+docker exec ls-server make swagger
 
-# para iniciar o servidor:
-make swagger_serve
+# Para lançar o servidor que disponibiliza a documentação
+docker exec ls-server make swagger_serve
 ```
+
+Após isso, basta acessar o endereço `http://localhost:4004/docs`
 
 ### Como faço para abrir uma live?
 

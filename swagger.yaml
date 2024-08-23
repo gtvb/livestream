@@ -10,6 +10,9 @@ definitions:
             id:
                 type: string
                 x-go-name: ID
+            live_stream_status:
+                type: boolean
+                x-go-name: LiveStatus
             name:
                 type: string
                 x-go-name: Name
@@ -51,6 +54,9 @@ definitions:
                 format: date-time
                 type: string
                 x-go-name: UpdatedAt
+            username:
+                type: string
+                x-go-name: Username
         type: object
         x-go-package: github.com/gtvb/livestream/models
 info:
@@ -58,23 +64,19 @@ info:
     title: LiveStreamAPI
     version: 1.0.0
 paths:
-    /livestream/:user_id:
+    /livestreams/{user_id}:
         get:
-            description: Realiza o login de um usuário e gera um token para futuras operações protegidas
             operationId: getUserLiveStreams
             responses:
                 "200":
                     $ref: '#/responses/liveStreamsResponse'
                 "404":
                     $ref: '#/responses/messageResponse'
+            summary: Get all live streams that belong to the user specified by `user_id`.
             tags:
-                - users
                 - livestreams
-    /livestream/create:
+    /livestreams/create:
         post:
-            description: |-
-                Cria uma nova livestream e atribui ela ao usuário contido no
-                corpo da requisição.
             operationId: createLiveStream
             parameters:
                 - in: body
@@ -82,40 +84,47 @@ paths:
                   schema:
                     properties:
                         name:
+                            description: Name of the live stream
                             type: string
                             x-go-name: Name
                         user_id:
+                            description: User ID of the stream creator
                             type: string
                             x-go-name: UserId
+                    required:
+                        - user_id
+                        - name
                     type: object
             responses:
-                "200":
+                "201":
                     $ref: '#/responses/liveStreamResponse'
+                "400":
+                    $ref: '#/responses/messageResponse'
                 "404":
                     $ref: '#/responses/messageResponse'
                 "500":
                     $ref: '#/responses/messageResponse'
+            summary: Create a new live stream and assign it to the user specified in the request body.
             tags:
                 - livestreams
-    /livestream/delete/:id:
+    /livestreams/delete/{id}:
         delete:
             operationId: deleteLiveStream
             responses:
                 "200":
-                    $ref: '#/responses/liveStreamResponse'
+                    $ref: '#/responses/messageResponse'
+                "400":
+                    $ref: '#/responses/messageResponse'
                 "404":
                     $ref: '#/responses/messageResponse'
                 "500":
                     $ref: '#/responses/messageResponse'
-            summary: Deleta uma livestream dado um id válido.
+            summary: Delete a live stream given a valid `id`.
             tags:
                 - livestreams
-    /livestream/update/:id:
-        patch:
-            description: |-
-                Cria uma nova livestream e atribui ela ao usuário contido no
-                corpo da requisição.
-            operationId: updateLiveStream
+    /livestreams/info/{id}:
+        get:
+            operationId: getLiveStreamData
             responses:
                 "200":
                     $ref: '#/responses/liveStreamResponse'
@@ -123,47 +132,72 @@ paths:
                     $ref: '#/responses/messageResponse'
                 "500":
                     $ref: '#/responses/messageResponse'
+            summary: Get data for the live stream represented by the specified `id`.
             tags:
                 - livestreams
-    /user/:user_id:
+    /livestreams/update/{id}:
+        patch:
+            operationId: updateLiveStream
+            responses:
+                "200":
+                    $ref: '#/responses/messageResponse'
+                "400":
+                    $ref: '#/responses/messageResponse'
+                "404":
+                    $ref: '#/responses/messageResponse'
+                "500":
+                    $ref: '#/responses/messageResponse'
+            summary: Update the data of a live stream identified by the specified `id`.
+            tags:
+                - livestreams
+    /users/{id}:
         delete:
-            description: |-
-                Remove um usuário da base de dados, juntamente com todas as liveStreams cadastradas
-                sobre seu mesmo id
             operationId: deleteUser
             responses:
                 "200":
                     $ref: '#/responses/messageResponse'
                 "404":
                     $ref: '#/responses/messageResponse'
+            summary: Delete a user from the database along with all their registered live streams.
             tags:
                 - users
-        patch:
-            description: |-
-                Atualiza os dados do usuário identificado pelo `user_id` especificado
-                como parâmetro.
-            operationId: updateUser
-            responses:
-                "200":
-                    $ref: '#/responses/messageResponse'
-                "400":
-                    $ref: '#/responses/messageResponse'
-            tags:
-                - users
-    /users/:id:
         get:
-            description: Retorna as informações sobre um usuário dado um id válido
             operationId: getUserProfile
             responses:
                 "200":
                     $ref: '#/responses/userResponse'
                 "404":
                     $ref: '#/responses/messageResponse'
+            summary: Get user profile information given a valid id.
+            tags:
+                - users
+        patch:
+            operationId: updateUser
+            responses:
+                "200":
+                    $ref: '#/responses/messageResponse'
+                "400":
+                    $ref: '#/responses/messageResponse'
+            summary: Update the user's data identified by the specified `id` parameter.
+            tags:
+                - users
+    /users/all:
+        get:
+            operationId: getAllUsers
+            responses:
+                "200":
+                    description: User
+                    schema:
+                        items:
+                            $ref: '#/definitions/User'
+                        type: array
+                "500":
+                    $ref: '#/responses/messageResponse'
+            summary: Get all users.
             tags:
                 - users
     /users/login:
         post:
-            description: Realiza o login de um usuário e gera um token para futuras operações protegidas
             operationId: loginUser
             parameters:
                 - in: body
@@ -171,11 +205,16 @@ paths:
                   schema:
                     properties:
                         email:
+                            description: User's email
                             type: string
                             x-go-name: Email
                         password:
+                            description: User's password
                             type: string
                             x-go-name: Password
+                    required:
+                        - email
+                        - password
                     type: object
             responses:
                 "200":
@@ -186,11 +225,11 @@ paths:
                     $ref: '#/responses/messageResponse'
                 "500":
                     $ref: '#/responses/messageResponse'
+            summary: Login a user and generate a token for future protected operations.
             tags:
                 - users
     /users/signup:
         post:
-            description: Realiza o signup de um usuário e gera um token para futuras operações protegidas
             operationId: signupUser
             parameters:
                 - in: body
@@ -198,14 +237,26 @@ paths:
                   schema:
                     properties:
                         email:
+                            description: User's email
                             type: string
                             x-go-name: Email
                         name:
+                            description: User's name
                             type: string
                             x-go-name: Name
                         password:
+                            description: User's password
                             type: string
                             x-go-name: Password
+                        username:
+                            description: User's username
+                            type: string
+                            x-go-name: Username
+                    required:
+                        - name
+                        - username
+                        - email
+                        - password
                     type: object
             responses:
                 "201":
@@ -214,38 +265,48 @@ paths:
                     $ref: '#/responses/messageResponse'
                 "500":
                     $ref: '#/responses/messageResponse'
+            summary: Signup a user and generate a token for future protected operations.
             tags:
                 - users
 responses:
     liveStreamResponse:
-        description: ""
+        description: LiveStreamResponseWrapper contains a response with live stream data.
         schema:
             properties:
                 stream_id:
+                    description: ID of the live stream
                     type: string
                     x-go-name: StreamId
             type: object
     liveStreamsResponse:
-        description: ""
+        description: LiveStreamsResponseWrapper contains a response with live streams.
         schema:
-            items:
-                $ref: '#/definitions/LiveStream'
-            type: array
+            properties:
+                livestreams:
+                    description: List of live streams
+                    items:
+                        $ref: '#/definitions/LiveStream'
+                    type: array
+                    x-go-name: LiveStreams
+            type: object
     messageResponse:
-        description: ""
+        description: MessageResponseWrapper contains a message response.
         headers:
             Body: {}
         schema:
             properties:
                 message:
+                    description: A descriptive message
                     type: string
                     x-go-name: Message
             type: object
     tokenResponse:
-        description: ""
+        description: TokenResponseWrapper contains a token response.
         headers:
             Body:
-                description: O token JWT usado para próximas requisições protegidas
+                description: |-
+                    The JWT token for future protected requests.
+                    required: true
         schema:
             properties:
                 token:
@@ -253,9 +314,12 @@ responses:
                     x-go-name: Token
             type: object
     userResponse:
-        description: ""
+        description: UserResponseWrapper contains a user response.
         schema:
-            $ref: '#/definitions/User'
+            properties:
+                user:
+                    $ref: '#/definitions/User'
+            type: object
 schemes:
     - http
 swagger: "2.0"

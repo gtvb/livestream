@@ -4,6 +4,9 @@ services:
     build: .
     ports:
       - 3333:3333
+      - 4004:4004
+    volumes:
+      - ./:/app
     depends_on:
       - mongo
     

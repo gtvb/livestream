@@ -12,31 +12,40 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// CreateLiveStreamParamsWrapper contains parameters for creating a live stream.
 // swagger:parameters createLiveStream
 type CreateLiveStreamParamsWrapper struct {
 	// in:body
 	Body struct {
+		// User ID of the stream creator
+		// required: true
 		UserId string `json:"user_id"`
-		Name   string `json:"name"`
+		// Name of the live stream
+		// required: true
+		Name string `json:"name"`
 	}
 }
 
+// LiveStreamResponseWrapper contains a response with live stream data.
 // swagger:response liveStreamResponse
 type LiveStreamResponseWrapper struct {
 	// in:body
 	Body struct {
+		// ID of the live stream
 		StreamId primitive.ObjectID `json:"stream_id"`
 	}
 }
 
-// swagger:route POST /livestream/create livestreams createLiveStream
+// swagger:route POST /livestreams/create livestreams createLiveStream
 //
-// Cria uma nova livestream e atribui ela ao usuário contido no
-// corpo da requisição.
-// responses:
-// 200: liveStreamResponse
-// 404: messageResponse
-// 500: messageResponse
+// Create a new live stream and assign it to the user specified in the request body.
+//
+// Responses:
+//
+//	201: liveStreamResponse
+//	400: messageResponse
+//	404: messageResponse
+//	500: messageResponse
 func (env *ServerEnv) createLiveStream(ctx *gin.Context) {
 	var createLiveStreamBody struct {
 		UserId string `json:"user_id"`
@@ -73,16 +82,18 @@ func (env *ServerEnv) createLiveStream(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, gin.H{"message": "livestream created"})
 }
 
-// swagger:route DELETE /livestream/delete/:id livestreams deleteLiveStream
+// swagger:route DELETE /livestreams/delete/{id} livestreams deleteLiveStream
 //
-// Deleta uma livestream dado um id válido.
+// Delete a live stream given a valid `id`.
 //
-// responses:
-// 200: liveStreamResponse
-// 404: messageResponse
-// 500: messageResponse
+// Responses:
+//
+//	200: messageResponse
+//	400: messageResponse
+//	404: messageResponse
+//	500: messageResponse
 func (env *ServerEnv) deleteLiveStream(ctx *gin.Context) {
-	streamId := ctx.Param("stream_id")
+	streamId := ctx.Param("id")
 
 	id, err := primitive.ObjectIDFromHex(streamId)
 	if err != nil {
@@ -92,23 +103,25 @@ func (env *ServerEnv) deleteLiveStream(ctx *gin.Context) {
 
 	err = env.liveStreamsRepository.DeleteLiveStream(id)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "failed to delete live stream"})
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
 }
 
-// swagger:route PATCH /livestream/update/:id livestreams updateLiveStream
+// swagger:route PATCH /livestreams/update/{id} livestreams updateLiveStream
 //
-// Cria uma nova livestream e atribui ela ao usuário contido no
-// corpo da requisição.
-// responses:
-// 200: liveStreamResponse
-// 404: messageResponse
-// 500: messageResponse
+// Update the data of a live stream identified by the specified `id`.
+//
+// Responses:
+//
+//	200: messageResponse
+//	400: messageResponse
+//	404: messageResponse
+//	500: messageResponse
 func (env *ServerEnv) updateLiveStream(ctx *gin.Context) {
-	streamId := ctx.Param("stream_id")
+	streamId := ctx.Param("id")
 
 	id, err := primitive.ObjectIDFromHex(streamId)
 	if err != nil {
@@ -120,36 +133,46 @@ func (env *ServerEnv) updateLiveStream(ctx *gin.Context) {
 	name := ctx.Query("name")
 
 	if status == "" && name == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "need one update paramater"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "need one update parameter"})
 		return
 	}
 
 	if status != "" {
-		// TODO: verify error
-		statusBool, _ := strconv.ParseBool(status)
-		err := env.liveStreamsRepository.UpdateLiveStreamSetStatus(id, statusBool)
-
+		statusBool, err := strconv.ParseBool(status)
 		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid status value"})
+			return
+		}
+
+		err = env.liveStreamsRepository.UpdateLiveStreamSetStatus(id, statusBool)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
 	}
 
 	if name != "" {
-		// TODO: verify error
-		err := env.liveStreamsRepository.UpdateLiveStreamName(id, name)
-
+		err = env.liveStreamsRepository.UpdateLiveStreamName(id, name)
 		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "succecss"})
+	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
 }
 
+// swagger:route GET /livestreams/info/{id} livestreams getLiveStreamData
+//
+// Get data for the live stream represented by the specified `id`.
+//
+// Responses:
+//
+//	200: liveStreamResponse
+//	404: messageResponse
+//	500: messageResponse
 func (env *ServerEnv) getLiveStreamData(ctx *gin.Context) {
-	streamId := ctx.Param("stream_id")
+	streamId := ctx.Param("id")
 
 	id, err := primitive.ObjectIDFromHex(streamId)
 	if err != nil {
@@ -159,7 +182,7 @@ func (env *ServerEnv) getLiveStreamData(ctx *gin.Context) {
 
 	livestream, err := env.liveStreamsRepository.GetLiveStreamById(id)
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "failed to find live stream"})
 		return
 	}
 
@@ -172,37 +195,31 @@ func (env *ServerEnv) validateStream(ctx *gin.Context) {
 	password := ctx.Query("password")
 
 	if username == "" || password == "" {
+		fmt.Println("No user and password")
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "missing username/password combination"})
 		return
 	}
 
-	// Verificar se usuário existe
 	user, err := env.userRepository.GetUserByUsername(username)
 	if err != nil {
-		fmt.Println("No username")
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		fmt.Println("No user")
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid username"})
 		return
 	}
 
-	// Verificar se a senha está correta
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		fmt.Println("No password correct")
+		fmt.Println("Wrong password")
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "incorrect password"})
 		return
 	}
 
-	// TODO: Utilizar a senha para criptografar a chave de stream. Após isso, verificar se
-	// existe alguma entrada correspondente à esse hash. Se sim, a stream é válida
-
-	fmt.Println(streamKey)
 	ls, err := env.liveStreamsRepository.GetLiveStreamByStreamKey(streamKey)
 	if err != nil {
-		fmt.Println("No Key")
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		fmt.Println("No stream")
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid stream key"})
 		return
 	}
 
-	// Redirecionar para a nova localização do arquivo
 	location := fmt.Sprintf("rtmp://127.0.0.1/hls-live/%s", ls.ID.Hex())
 	ctx.Redirect(http.StatusFound, location)
 }
