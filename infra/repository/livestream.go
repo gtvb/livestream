@@ -11,24 +11,24 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const LiveStreamsCollectionName = "livestreams"
-
 // Repositório de acesso aos dados da entidade `LiveStream`.
 // Qualquer repositório precisa implementar a interface
 // `LiveStreamRepositoryInterface` para ser utilizada de forma
 // válida pelo servidor HTTP.
 type LiveStreamRepository struct {
-	Db *db.Database
+	liveStreamCollectionName string
+	Db                       *db.Database
 }
 
-func NewLiveStreamRepository(db *db.Database) *LiveStreamRepository {
+func NewLiveStreamRepository(db *db.Database, liveStreamCollectionName string) *LiveStreamRepository {
 	return &LiveStreamRepository{
-		Db: db,
+		liveStreamCollectionName: liveStreamCollectionName,
+		Db:                       db,
 	}
 }
 
 func (lr *LiveStreamRepository) CreateLiveStream(name string, publisherId primitive.ObjectID) (interface{}, error) {
-	coll := lr.Db.Collection(LiveStreamsCollectionName)
+	coll := lr.Db.Collection(lr.liveStreamCollectionName)
 	doc := models.NewLiveStream(name, publisherId)
 
 	res, err := coll.InsertOne(context.TODO(), doc)
@@ -40,7 +40,7 @@ func (lr *LiveStreamRepository) CreateLiveStream(name string, publisherId primit
 }
 
 func (lr *LiveStreamRepository) DeleteLiveStream(id primitive.ObjectID) error {
-	coll := lr.Db.Collection(LiveStreamsCollectionName)
+	coll := lr.Db.Collection(lr.liveStreamCollectionName)
 	filter := bson.M{"_id": id}
 
 	res, err := coll.DeleteOne(context.TODO(), filter)
@@ -56,7 +56,7 @@ func (lr *LiveStreamRepository) DeleteLiveStream(id primitive.ObjectID) error {
 }
 
 func (lr *LiveStreamRepository) DeleteLiveStreamsByPublisher(id primitive.ObjectID) error {
-	coll := lr.Db.Collection(LiveStreamsCollectionName)
+	coll := lr.Db.Collection(lr.liveStreamCollectionName)
 	filter := bson.M{"publisher_id": id}
 
 	_, err := coll.DeleteMany(context.TODO(), filter)
@@ -68,7 +68,7 @@ func (lr *LiveStreamRepository) DeleteLiveStreamsByPublisher(id primitive.Object
 }
 
 func (lr *LiveStreamRepository) updateLiveStream(id primitive.ObjectID, updateQuery primitive.M) error {
-	coll := lr.Db.Collection(LiveStreamsCollectionName)
+	coll := lr.Db.Collection(lr.liveStreamCollectionName)
 
 	res, err := coll.UpdateByID(context.TODO(), id, updateQuery)
 	if err != nil {
@@ -107,14 +107,14 @@ func (lr *LiveStreamRepository) IncrementLiveStreamUserCount(id primitive.Object
 func (lr *LiveStreamRepository) DecrementLiveStreamUserCount(id primitive.ObjectID) error {
 	update := bson.M{
 		"$set": bson.M{"updated_at": time.Now()},
-		"$dec": bson.M{"viewer_count": 1},
+		"$inc": bson.M{"viewer_count": -1},
 	}
 	return lr.updateLiveStream(id, update)
 }
 
 func (lr *LiveStreamRepository) getLiveStreamByParam(fieldName string, param any) (*models.LiveStream, error) {
 	var liveStream models.LiveStream
-	coll := lr.Db.Collection(LiveStreamsCollectionName)
+	coll := lr.Db.Collection(lr.liveStreamCollectionName)
 
 	filter := bson.M{fieldName: param}
 
@@ -129,7 +129,7 @@ func (lr *LiveStreamRepository) getLiveStreamByParam(fieldName string, param any
 
 func (lr *LiveStreamRepository) getLiveStreamByParamBatch(filter primitive.M) ([]*models.LiveStream, error) {
 	var liveStreams []*models.LiveStream
-	coll := lr.Db.Collection(LiveStreamsCollectionName)
+	coll := lr.Db.Collection(lr.liveStreamCollectionName)
 
 	cursor, err := coll.Find(context.TODO(), filter)
 	if err != nil {

@@ -23,13 +23,7 @@ type ServerEnv struct {
 	userRepository        models.UserRepositoryInterface
 }
 
-// Inicia um servidor HTTP e define as rotas padrão da aplicação
-func RunServer(lr models.LiveStreamRepositoryInterface, ur models.UserRepositoryInterface) {
-	env := ServerEnv{
-		liveStreamsRepository: lr,
-		userRepository:        ur,
-	}
-
+func setupRouter(env ServerEnv) *gin.Engine {
 	router := gin.Default()
 
 	users := router.Group("/user")
@@ -48,5 +42,16 @@ func RunServer(lr models.LiveStreamRepositoryInterface, ur models.UserRepository
 	streams.GET("/info/:id", authMiddleware(), env.getLiveStreamData)
 	streams.GET("/on_publish", env.validateStream)
 
+	return router
+}
+
+// Inicia um servidor HTTP e define as rotas padrão da aplicação
+func RunServer(lr models.LiveStreamRepositoryInterface, ur models.UserRepositoryInterface) {
+	env := ServerEnv{
+		liveStreamsRepository: lr,
+		userRepository:        ur,
+	}
+
+	router := setupRouter(env)
 	router.Run(":" + os.Getenv("SERVER_PORT"))
 }

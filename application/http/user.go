@@ -11,38 +11,42 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type LoginBody struct {
+	// User's email
+	// required: true
+	Email string `json:"email"`
+	// User's password
+	// required: true
+	Password string `json:"password"`
+}
+
 // LoginParamsWrapper contains parameters for user login.
 // swagger:parameters loginUser
 type LoginParamsWrapper struct {
 	// in:body
-	Body struct {
-		// User's email
-		// required: true
-		Email string `json:"email"`
-		// User's password
-		// required: true
-		Password string `json:"password"`
-	}
+	Body LoginBody
+}
+
+type SignupBody struct {
+	// User's name
+	// required: true
+	Name string `json:"name"`
+	// User's username
+	// required: true
+	Username string `json:"username"`
+	// User's email
+	// required: true
+	Email string `json:"email"`
+	// User's password
+	// required: true
+	Password string `json:"password"`
 }
 
 // SignupParamsWrapper contains parameters for user signup.
 // swagger:parameters signupUser
 type SignupParamsWrapper struct {
 	// in:body
-	Body struct {
-		// User's name
-		// required: true
-		Name string `json:"name"`
-		// User's username
-		// required: true
-		Username string `json:"username"`
-		// User's email
-		// required: true
-		Email string `json:"email"`
-		// User's password
-		// required: true
-		Password string `json:"password"`
-	}
+	Body SignupBody
 }
 
 // UserResponseWrapper contains a user response.
@@ -52,6 +56,16 @@ type UserResponseWrapper struct {
 	Body struct {
 		// The user details
 		User models.User `json:"user"`
+	}
+}
+
+// UserListResponseWrapper contains a user list response.
+// swagger:response userListResponse
+type UserListResponseWrapper struct {
+	// in:body
+	Body struct {
+		// The user details
+		Users []models.User `json:"users"`
 	}
 }
 
@@ -95,10 +109,7 @@ type MessageResponseWrapper struct {
 //	404: messageResponse
 //	500: messageResponse
 func (env *ServerEnv) login(ctx *gin.Context) {
-	var loginBody struct {
-		Email    string
-		Password string
-	}
+	var loginBody LoginBody
 
 	if err := ctx.ShouldBindBodyWithJSON(&loginBody); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "failed to get request body"})
@@ -140,12 +151,7 @@ func (env *ServerEnv) login(ctx *gin.Context) {
 //	400: messageResponse
 //	500: messageResponse
 func (env *ServerEnv) signup(ctx *gin.Context) {
-	var signupBody struct {
-		Email    string
-		Name     string
-		Username string
-		Password string
-	}
+	var signupBody SignupBody
 
 	if err := ctx.ShouldBindBodyWithJSON(&signupBody); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "failed to get request body"})

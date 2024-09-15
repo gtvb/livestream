@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -191,8 +192,17 @@ func (env *ServerEnv) getLiveStreamData(ctx *gin.Context) {
 
 func (env *ServerEnv) validateStream(ctx *gin.Context) {
 	streamKey := ctx.Query("name")
-	username := ctx.Query("username")
-	password := ctx.Query("password")
+
+	// Obter os parâmetros (gambiarra)
+	tcurl := ctx.Query("swfurl")
+	url, err := url.Parse(tcurl)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	username := url.Query().Get("username")
+	password := url.Query().Get("password")
 
 	if username == "" || password == "" {
 		fmt.Println("No user and password")
@@ -221,5 +231,6 @@ func (env *ServerEnv) validateStream(ctx *gin.Context) {
 	}
 
 	location := fmt.Sprintf("rtmp://127.0.0.1/hls-live/%s", ls.ID.Hex())
+
 	ctx.Redirect(http.StatusFound, location)
 }

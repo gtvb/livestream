@@ -40,13 +40,13 @@ func authMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		auth := ctx.Request.Header.Get("Authorization")
 		if auth == "" {
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "missing Authorization header"})
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "missing Authorization header"})
 			return
 		}
 
 		words := strings.Split(auth, " ")
 		if len(words) != 2 {
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "token not present in header"})
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "token not present in header"})
 			return
 		}
 
@@ -55,12 +55,12 @@ func authMiddleware() gin.HandlerFunc {
 		})
 
 		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "could not verify token " + err.Error()})
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "could not verify token " + err.Error()})
 			return
 		}
 
 		if !token.Valid {
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "invalid token"})
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "invalid token"})
 			return
 		}
 

@@ -22,8 +22,8 @@ func main() {
 		db.Client().Disconnect(context.TODO())
 	}()
 
-	userRepository := repository.NewUserRepository(db)
-	liveStreamsRepository := repository.NewLiveStreamRepository(db)
+	userRepository := repository.NewUserRepository(db, "users")
+	liveStreamsRepository := repository.NewLiveStreamRepository(db, "livestreams")
 
 	http.RunServer(liveStreamsRepository, userRepository)
 }

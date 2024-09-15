@@ -11,25 +11,27 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const UserCollectionName = "users"
-
 // Repositório de acesso aos dados da entidade `User`.
 // Qualquer repositório precisa implementar a interface
 // `UserRepositoryInterface` para ser utilizada de forma
 // válida pelo servidor HTTP.
 type UserRepository struct {
-	Db *db.Database
+	userCollectionName string
+	Db                 *db.Database
 }
 
-func NewUserRepository(db *db.Database) *UserRepository {
+func NewUserRepository(db *db.Database, userCollectionName string) *UserRepository {
 	return &UserRepository{
-		Db: db,
+		userCollectionName: userCollectionName,
+		Db:                 db,
 	}
 }
 
 func (ur *UserRepository) CreateUser(name, username, email, password string) (interface{}, error) {
-	coll := ur.Db.Collection(UserCollectionName)
+	coll := ur.Db.Collection(ur.userCollectionName)
 	doc := models.NewUser(name, username, email, password)
+
+	// TODO: verify email against a valid pattern and return error if it exists, implement it
 
 	id, err := coll.InsertOne(context.TODO(), doc)
 	if err != nil {
@@ -40,7 +42,7 @@ func (ur *UserRepository) CreateUser(name, username, email, password string) (in
 }
 
 func (ur *UserRepository) DeleteUser(id primitive.ObjectID) error {
-	coll := ur.Db.Collection(UserCollectionName)
+	coll := ur.Db.Collection(ur.userCollectionName)
 	filter := bson.M{"_id": id}
 
 	_, err := coll.DeleteOne(context.TODO(), filter)
@@ -52,7 +54,7 @@ func (ur *UserRepository) DeleteUser(id primitive.ObjectID) error {
 }
 
 func (ur *UserRepository) updateUser(id primitive.ObjectID, updateQuery primitive.M) error {
-	coll := ur.Db.Collection(UserCollectionName)
+	coll := ur.Db.Collection(ur.userCollectionName)
 
 	res, err := coll.UpdateByID(context.TODO(), id, updateQuery)
 	if err != nil {
@@ -87,7 +89,7 @@ func (ur *UserRepository) UpdateUserPassword(id primitive.ObjectID, password str
 
 func (ur *UserRepository) getUserByParam(filter primitive.M) (*models.User, error) {
 	var user models.User
-	coll := ur.Db.Collection(UserCollectionName)
+	coll := ur.Db.Collection(ur.userCollectionName)
 
 	res := coll.FindOne(context.TODO(), filter)
 	err := res.Decode(&user)
@@ -99,7 +101,6 @@ func (ur *UserRepository) getUserByParam(filter primitive.M) (*models.User, erro
 }
 
 func (ur *UserRepository) GetUserByUsername(username string) (*models.User, error) {
-	// CHANGE name later
 	return ur.getUserByParam(bson.M{"username": username})
 }
 
@@ -112,7 +113,7 @@ func (ur *UserRepository) GetUserById(id primitive.ObjectID) (*models.User, erro
 }
 
 func (ur *UserRepository) GetAllUsers() ([]*models.User, error) {
-	coll := ur.Db.Collection(UserCollectionName)
+	coll := ur.Db.Collection(ur.userCollectionName)
 	filter := bson.D{}
 
 	cursor, err := coll.Find(context.TODO(), filter)

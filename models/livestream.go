@@ -44,7 +44,7 @@ func NewLiveStream(name string, publisherId primitive.ObjectID) *LiveStream {
 		PublisherId: publisherId,
 		LiveStatus:  false,
 		ViewerCount: 0,
-		StreamKey: streamId.String(),
+		StreamKey:   streamId.String(),
 
 		CreatedAt: time.Now(),
 	}
