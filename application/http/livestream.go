@@ -13,18 +13,20 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type CreateLiveStreamBody struct {
+	// User ID of the stream creator
+	// required: true
+	UserId string `json:"user_id"`
+	// Name of the live stream
+	// required: true
+	Name string `json:"name"`
+}
+
 // CreateLiveStreamParamsWrapper contains parameters for creating a live stream.
 // swagger:parameters createLiveStream
 type CreateLiveStreamParamsWrapper struct {
 	// in:body
-	Body struct {
-		// User ID of the stream creator
-		// required: true
-		UserId string `json:"user_id"`
-		// Name of the live stream
-		// required: true
-		Name string `json:"name"`
-	}
+	Body CreateLiveStreamBody
 }
 
 // LiveStreamResponseWrapper contains a response with live stream data.
@@ -48,10 +50,7 @@ type LiveStreamResponseWrapper struct {
 //	404: messageResponse
 //	500: messageResponse
 func (env *ServerEnv) createLiveStream(ctx *gin.Context) {
-	var createLiveStreamBody struct {
-		UserId string `json:"user_id"`
-		Name   string `json:"name"`
-	}
+	var createLiveStreamBody CreateLiveStreamBody
 
 	if err := ctx.ShouldBindBodyWithJSON(&createLiveStreamBody); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "could not get body from request"})
