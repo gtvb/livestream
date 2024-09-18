@@ -6,10 +6,30 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gtvb/livestream/models"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
+
+type UpdateUserBody struct {
+	// User's username
+	// required: true
+	Username string `json:"username"`
+	// User's email
+	// required: true
+	Email string `json:"email"`
+	// User's password
+	// required: true
+	Password string `json:"password"`
+}
+
+// UpdateUserParamsWrapper contains parameters for updating a user
+// swagger:parameters updateUser
+type UpdateUserParamsWrapper struct {
+	// in:body
+	Body UpdateUserBody
+}
 
 type LoginBody struct {
 	// User's email
@@ -175,7 +195,7 @@ func (env *ServerEnv) signup(ctx *gin.Context) {
 		return
 	}
 
-	userId, err := env.userRepository.CreateUser(signupBody.Name, signupBody.Username, signupBody.Email, string(hashedPassword))
+	userId, err := env.userRepository.CreateUser(signupBody.Username, signupBody.Email, string(hashedPassword))
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -282,25 +302,38 @@ func (env *ServerEnv) deleteUser(ctx *gin.Context) {
 //	400: messageResponse
 func (env *ServerEnv) updateUser(ctx *gin.Context) {
 	id := ctx.Param("id")
-	objId, err := primitive.ObjectIDFromHex(id)
+	userID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
 		return
 	}
 
-	name := ctx.Query("name")
-	if name == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "expected at least one query parameter for update"})
+	var updateBody UpdateUserBody
+	if err := ctx.ShouldBindBodyWithJSON(&updateBody); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "could not parse request body: " + err.Error()})
 		return
 	}
 
-	err = env.userRepository.UpdateUserName(objId, name)
+	newData := bson.M{}
+	if updateBody.Email != "" {
+		newData["email"] = updateBody.Email
+	}
+
+	if updateBody.Username != "" {
+		newData["username"] = updateBody.Username
+	}
+
+	if updateBody.Password != "" {
+		newData["password"] = updateBody.Email
+	}
+
+	err = env.userRepository.UpdateUser(userID, newData)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "failed to update this user's name"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "could not update user: " + err.Error()})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "user updated"})
+	ctx.JSON(http.StatusOK, gin.H{"message": "updated user with success"})
 }
 
 // swagger:route GET /users/all users getAllUsers

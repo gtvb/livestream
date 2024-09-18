@@ -18,7 +18,6 @@ func TestUserSignup(t *testing.T) {
 
 	signupBody := SignupBody{
 		Email:    "test@email.com",
-		Name:     "test",
 		Username: "test_username",
 		Password: "test_pass",
 	}
@@ -35,7 +34,7 @@ func TestUserLogin(t *testing.T) {
 	defer container.Terminate()
 
 	env := setupEnv(container.Database)
-	env.userRepository.CreateUser("test", "test_username", "test@email.com", hashPassword("test_pass"))
+	env.userRepository.CreateUser("test_username", "test@email.com", hashPassword("test_pass"))
 
 	loginBody := LoginBody{
 		Email:    "test@email.com",
@@ -55,7 +54,7 @@ func TestGetUserProfile(t *testing.T) {
 
 	env := setupEnv(container.Database)
 
-	id, _ := env.userRepository.CreateUser("test", "test_username", "test@email.com", hashPassword("test_pass"))
+	id, _ := env.userRepository.CreateUser("test_username", "test@email.com", hashPassword("test_pass"))
 	userID := id.(primitive.ObjectID)
 
 	router := setupRouter(env)
@@ -71,7 +70,7 @@ func TestDeleteUser(t *testing.T) {
 
 	env := setupEnv(container.Database)
 
-	id, _ := env.userRepository.CreateUser("test", "test_username", "test@email.com", hashPassword("test_pass"))
+	id, _ := env.userRepository.CreateUser("test_username", "test@email.com", hashPassword("test_pass"))
 	userID := id.(primitive.ObjectID)
 
 	router := setupRouter(env)
@@ -81,6 +80,27 @@ func TestDeleteUser(t *testing.T) {
 	assert.Contains(t, writer.Body.String(), "user deleted")
 }
 
+func TestUpdateUser(t *testing.T) {
+	container := setupDatabase()
+	defer container.Terminate()
+
+	env := setupEnv(container.Database)
+
+	id, _ := env.userRepository.CreateUser("test_username", "test@email.com", hashPassword("test_pass"))
+	userID := id.(primitive.ObjectID)
+
+	updateBody := UpdateUserBody{
+		Username: "test_username_new",
+		Email:    "test@new.email.com",
+	}
+
+	router := setupRouter(env)
+	writer := makeRequest(router, "PATCH", "/user/update/"+userID.Hex(), updateBody, &AuthParams{Email: "test@email.com", Password: "test_pass"})
+
+	assert.Equal(t, http.StatusOK, writer.Code)
+	assert.Contains(t, writer.Body.String(), "updated user with success")
+}
+
 func TestGetAllUsers(t *testing.T) {
 	container := setupDatabase()
 	defer container.Terminate()
@@ -88,13 +108,13 @@ func TestGetAllUsers(t *testing.T) {
 	env := setupEnv(container.Database)
 
 	users := []models.User{
-		{Name: "test1", Username: "test_username1", Email: "test1@email.com", Password: hashPassword("test_pass1")},
-		{Name: "test2", Username: "test_username2", Email: "test2@email.com", Password: hashPassword("test_pass2")},
-		{Name: "test3", Username: "test_username3", Email: "test3@email.com", Password: hashPassword("test_pass3")},
+		{Username: "test_username1", Email: "test1@email.com", Password: hashPassword("test_pass1")},
+		{Username: "test_username2", Email: "test2@email.com", Password: hashPassword("test_pass2")},
+		{Username: "test_username3", Email: "test3@email.com", Password: hashPassword("test_pass3")},
 	}
 
 	for _, user := range users {
-		env.userRepository.CreateUser(user.Name, user.Username, user.Email, user.Password)
+		env.userRepository.CreateUser(user.Username, user.Email, user.Password)
 	}
 
 	router := setupRouter(env)

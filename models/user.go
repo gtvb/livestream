@@ -3,16 +3,18 @@ package models
 import (
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type UserRepositoryInterface interface {
-	CreateUser(name, username, email, password string) (interface{}, error)
+	CreateUser(username, email, password string) (interface{}, error)
 	DeleteUser(id primitive.ObjectID) error
 
-	UpdateUserName(id primitive.ObjectID, name string) error
-	UpdateUserEmail(id primitive.ObjectID, email string) error
-	UpdateUserPassword(id primitive.ObjectID, password string) error
+	UpdateUser(id primitive.ObjectID, newData bson.M) error
+
+	UpdateUserAddToFollowList(id primitive.ObjectID, following primitive.ObjectID) error
+	UpdateUserRemoveFromFollowList(id primitive.ObjectID, following primitive.ObjectID) error
 
 	GetUserById(id primitive.ObjectID) (*User, error)
 	GetUserByEmail(email string) (*User, error)
@@ -21,26 +23,27 @@ type UserRepositoryInterface interface {
 	GetAllUsers() ([]*User, error)
 }
 
+// Representa um usuário cadastrado na plataforma
+// swagger:model
 type User struct {
 	ID       primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	Name     string             `bson:"name" json:"name"`
 	Username string             `bson:"username" json:"username"`
 	Email    string             `bson:"email" json:"email"`
 	Password string             `bson:"password" json:"password"`
 
 	Following []primitive.ObjectID `bson:"following" json:"following"`
-	Followers []primitive.ObjectID `bson:"followers" json:"followers"`
 
 	CreatedAt time.Time `bson:"created_at" json:"created_at"`
 	UpdatedAt time.Time `bson:"updated_at" json:"updated_at"`
 }
 
-func NewUser(name, username, email, password string) *User {
+func NewUser(username, email, password string) *User {
 	return &User{
-		Name:     name,
 		Username: username,
 		Email:    email,
 		Password: password,
+
+		Following: make([]primitive.ObjectID, 0),
 
 		CreatedAt: time.Now(),
 	}

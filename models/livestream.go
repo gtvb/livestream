@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -12,8 +13,8 @@ type LiveStreamRepositoryInterface interface {
 	DeleteLiveStream(id primitive.ObjectID) error
 	DeleteLiveStreamsByPublisher(id primitive.ObjectID) error
 
-	UpdateLiveStreamName(id primitive.ObjectID, name string) error
-	UpdateLiveStreamSetStatus(id primitive.ObjectID, status bool) error
+	UpdateLiveStream(id primitive.ObjectID, newData bson.M) error
+
 	IncrementLiveStreamUserCount(id primitive.ObjectID) error
 	DecrementLiveStreamUserCount(id primitive.ObjectID) error
 
@@ -24,10 +25,13 @@ type LiveStreamRepositoryInterface interface {
 	GetAllLiveStreams() ([]*LiveStream, error)
 }
 
+// Representa uma livestream acontecendo na plataforma
+// swagger:model
 type LiveStream struct {
-	ID          primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	ID   primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	Name string             `json:"name"`
+
 	StreamKey   string             `bson:"stream_key" json:"stream_key"`
-	Name        string             `json:"name"`
 	ViewerCount int                `bson:"viewer_count" json:"viewer_count"`
 	PublisherId primitive.ObjectID `bson:"publisher_id" json:"publisher_id"`
 

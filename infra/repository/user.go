@@ -27,9 +27,9 @@ func NewUserRepository(db *db.Database, userCollectionName string) *UserReposito
 	}
 }
 
-func (ur *UserRepository) CreateUser(name, username, email, password string) (interface{}, error) {
+func (ur *UserRepository) CreateUser(username, email, password string) (interface{}, error) {
 	coll := ur.Db.Collection(ur.userCollectionName)
-	doc := models.NewUser(name, username, email, password)
+	doc := models.NewUser(username, email, password)
 
 	// TODO: verify email against a valid pattern and return error if it exists, implement it
 
@@ -72,18 +72,23 @@ func (ur *UserRepository) updateUser(id primitive.ObjectID, updateQuery primitiv
 	return nil
 }
 
-func (ur *UserRepository) UpdateUserName(id primitive.ObjectID, name string) error {
-	update := bson.M{"$set": bson.M{"name": name, "updated_at": time.Now()}}
+func (ur *UserRepository) UpdateUser(id primitive.ObjectID, newData bson.M) error {
+	newData["updated_at"] = time.Now()
+
+	err := ur.updateUser(id, bson.M{"$set": newData})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (ur *UserRepository) UpdateUserAddToFollowList(id primitive.ObjectID, following primitive.ObjectID) error {
+	update := bson.M{"$push": bson.M{"following": following}, "$set": bson.M{"updated_at": time.Now()}}
 	return ur.updateUser(id, update)
 }
 
-func (ur *UserRepository) UpdateUserEmail(id primitive.ObjectID, email string) error {
-	update := bson.M{"$set": bson.M{"email": email, "updated_at": time.Now()}}
-	return ur.updateUser(id, update)
-}
-
-func (ur *UserRepository) UpdateUserPassword(id primitive.ObjectID, password string) error {
-	update := bson.M{"$set": bson.M{"password": password, "updated_at": time.Now()}}
+func (ur *UserRepository) UpdateUserRemoveFromFollowList(id primitive.ObjectID, following primitive.ObjectID) error {
+	update := bson.M{"$pull": bson.M{"following": following}, "$set": bson.M{"updated_at": time.Now()}}
 	return ur.updateUser(id, update)
 }
 

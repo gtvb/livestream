@@ -86,14 +86,15 @@ func (lr *LiveStreamRepository) updateLiveStream(id primitive.ObjectID, updateQu
 	return nil
 }
 
-func (lr *LiveStreamRepository) UpdateLiveStreamSetStatus(id primitive.ObjectID, status bool) error {
-	update := bson.M{"$set": bson.M{"live_stream_status": status, "updated_at": time.Now()}}
-	return lr.updateLiveStream(id, update)
-}
+func (lr *LiveStreamRepository) UpdateLiveStream(id primitive.ObjectID, newData bson.M) error {
+	newData["updated_at"] = time.Now()
 
-func (lr *LiveStreamRepository) UpdateLiveStreamName(id primitive.ObjectID, name string) error {
-	update := bson.M{"$set": bson.M{"name": name, "updated_at": time.Now()}}
-	return lr.updateLiveStream(id, update)
+	err := lr.updateLiveStream(id, bson.M{"$set": newData})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (lr *LiveStreamRepository) IncrementLiveStreamUserCount(id primitive.ObjectID) error {

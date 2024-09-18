@@ -5,6 +5,7 @@ import (
 
 	"github.com/gtvb/livestream/utils"
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -52,32 +53,22 @@ func TestDeleteLiveStreamsByPublisher(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestUpdateLiveStreamSetStatus(t *testing.T) {
+func TestUpdateLiveStream(t *testing.T) {
 	container := setupDatabase()
 	defer container.Terminate()
 
 	liveStreamRepo := NewLiveStreamRepository(container.Database, utils.LiveStreamCollectionTest)
 	publisherID := primitive.NewObjectID()
 
-	insertedID, err := liveStreamRepo.CreateLiveStream("Test Stream", publisherID)
+	insertedID, err := liveStreamRepo.CreateLiveStream("Test Stream 1", publisherID)
 	assert.NoError(t, err)
 
-	err = liveStreamRepo.UpdateLiveStreamSetStatus(insertedID.(primitive.ObjectID), true)
-	assert.NoError(t, err)
-}
-
-func TestUpdateLiveStreamName(t *testing.T) {
-	container := setupDatabase()
-	defer container.Terminate()
-
-	liveStreamRepo := NewLiveStreamRepository(container.Database, utils.LiveStreamCollectionTest)
-	publisherID := primitive.NewObjectID()
-
-	insertedID, err := liveStreamRepo.CreateLiveStream("Test Stream", publisherID)
+	err = liveStreamRepo.UpdateLiveStream(insertedID.(primitive.ObjectID), bson.M{"name": "(Updated) Live Stream 1", "live_stream_status": true})
 	assert.NoError(t, err)
 
-	err = liveStreamRepo.UpdateLiveStreamName(insertedID.(primitive.ObjectID), "New Stream Name")
-	assert.NoError(t, err)
+	ls, _ := liveStreamRepo.GetLiveStreamById(insertedID.(primitive.ObjectID))
+	assert.Equal(t, "(Updated) Live Stream 1", ls.Name)
+	assert.Equal(t, true, ls.LiveStatus)
 }
 
 func TestIncrementLiveStreamUserCount(t *testing.T) {

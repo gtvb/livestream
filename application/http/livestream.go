@@ -5,13 +5,29 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
+
+type UpdateLiveStreamBody struct {
+	// Live Status. On or off
+	// required: true
+	LiveStatus *bool `json:"live_stream_status"`
+	// Name of the live stream
+	// required: true
+	Name string `json:"name"`
+}
+
+// UpdateLiveStreamParamsWrapper contains parameters for updating a live stream.
+// swagger:parameters updateLiveStream
+type UpdateLiveStreamParamsWrapper struct {
+	// in:body
+	Body UpdateLiveStreamBody
+}
 
 type CreateLiveStreamBody struct {
 	// User ID of the stream creator
@@ -121,45 +137,35 @@ func (env *ServerEnv) deleteLiveStream(ctx *gin.Context) {
 //	404: messageResponse
 //	500: messageResponse
 func (env *ServerEnv) updateLiveStream(ctx *gin.Context) {
-	streamId := ctx.Param("id")
-
-	id, err := primitive.ObjectIDFromHex(streamId)
+	id := ctx.Param("id")
+	streamID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
-	status := ctx.Query("status")
-	name := ctx.Query("name")
-
-	if status == "" && name == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "need one update parameter"})
+	var updateLiveStreamBody UpdateLiveStreamBody
+	if err := ctx.ShouldBindBodyWithJSON(&updateLiveStreamBody); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "não foi possível interpretar o corpo da requisição"})
 		return
 	}
 
-	if status != "" {
-		statusBool, err := strconv.ParseBool(status)
-		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid status value"})
-			return
-		}
-
-		err = env.liveStreamsRepository.UpdateLiveStreamSetStatus(id, statusBool)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
+	newData := bson.M{}
+	if updateLiveStreamBody.Name != "" {
+		newData["name"] = updateLiveStreamBody.Name
 	}
 
-	if name != "" {
-		err = env.liveStreamsRepository.UpdateLiveStreamName(id, name)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
+	if updateLiveStreamBody.LiveStatus != nil {
+		newData["live_stream_status"] = *updateLiveStreamBody.LiveStatus
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
+	err = env.liveStreamsRepository.UpdateLiveStream(streamID, newData)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "falha ao atualizar a live: " + err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "live atualizada com sucesso"})
 }
 
 // swagger:route GET /livestreams/info/{id} livestreams getLiveStreamData

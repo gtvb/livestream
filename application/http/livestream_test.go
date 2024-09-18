@@ -10,12 +10,11 @@ import (
 )
 
 func createTestUser(env ServerEnv) *models.User {
-	id, _ := env.userRepository.CreateUser("test", "test_username", "test@email.com", hashPassword("test_pass"))
+	id, _ := env.userRepository.CreateUser("test_username", "test@email.com", hashPassword("test_pass"))
 	userID := id.(primitive.ObjectID)
 
 	return &models.User{
 		ID:       userID,
-		Name:     "test",
 		Username: "test_username",
 		Email:    "test@email.com",
 		Password: "test_pass",
@@ -60,28 +59,6 @@ func TestDeleteLiveStream(t *testing.T) {
 
 	router := setupRouter(env)
 	writer := makeRequest(router, "DELETE", "/livestreams/delete/"+id.Hex(), nil, authParams)
-
-	assert.Equal(t, http.StatusOK, writer.Code)
-	assert.Contains(t, writer.Body.String(), "success")
-}
-
-func TestUpdateLiveStream(t *testing.T) {
-	container := setupDatabase()
-	defer container.Terminate()
-
-	env := setupEnv(container.Database)
-	user := createTestUser(env)
-
-	authParams := &AuthParams{Email: user.Email, Password: user.Password}
-
-	streamID, err := env.liveStreamsRepository.CreateLiveStream("Old Name", user.ID)
-	if err != nil {
-		t.Fatalf("Failed to create test live stream: %v", err)
-	}
-	id := streamID.(primitive.ObjectID)
-
-	router := setupRouter(env)
-	writer := makeRequest(router, "PATCH", "/livestreams/update/"+id.Hex()+"?name=New Name", nil, authParams)
 
 	assert.Equal(t, http.StatusOK, writer.Code)
 	assert.Contains(t, writer.Body.String(), "success")

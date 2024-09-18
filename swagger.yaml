@@ -1,7 +1,23 @@
 consumes:
     - application/json
 definitions:
+    CreateLiveStreamBody:
+        properties:
+            name:
+                description: Name of the live stream
+                type: string
+                x-go-name: Name
+            user_id:
+                description: User ID of the stream creator
+                type: string
+                x-go-name: UserId
+        required:
+            - user_id
+            - name
+        type: object
+        x-go-package: github.com/gtvb/livestream/application/http
     LiveStream:
+        description: Representa uma livestream acontecendo na plataforma
         properties:
             created_at:
                 format: date-time
@@ -32,7 +48,83 @@ definitions:
                 x-go-name: ViewerCount
         type: object
         x-go-package: github.com/gtvb/livestream/models
+    LoginBody:
+        properties:
+            email:
+                description: User's email
+                type: string
+                x-go-name: Email
+            password:
+                description: User's password
+                type: string
+                x-go-name: Password
+        required:
+            - email
+            - password
+        type: object
+        x-go-package: github.com/gtvb/livestream/application/http
+    SignupBody:
+        properties:
+            email:
+                description: User's email
+                type: string
+                x-go-name: Email
+            name:
+                description: User's name
+                type: string
+                x-go-name: Name
+            password:
+                description: User's password
+                type: string
+                x-go-name: Password
+            username:
+                description: User's username
+                type: string
+                x-go-name: Username
+        required:
+            - name
+            - username
+            - email
+            - password
+        type: object
+        x-go-package: github.com/gtvb/livestream/application/http
+    UpdateLiveStreamBody:
+        properties:
+            live_status:
+                description: Live Status. On or off
+                type: boolean
+                x-go-name: LiveStatus
+            name:
+                description: Name of the live stream
+                type: string
+                x-go-name: Name
+        required:
+            - live_status
+            - name
+        type: object
+        x-go-package: github.com/gtvb/livestream/application/http
+    UpdateUserBody:
+        properties:
+            email:
+                description: User's email
+                type: string
+                x-go-name: Email
+            password:
+                description: User's password
+                type: string
+                x-go-name: Password
+            username:
+                description: User's username
+                type: string
+                x-go-name: Username
+        required:
+            - username
+            - email
+            - password
+        type: object
+        x-go-package: github.com/gtvb/livestream/application/http
     User:
+        description: Representa um usuário cadastrado na plataforma
         properties:
             created_at:
                 format: date-time
@@ -41,12 +133,14 @@ definitions:
             email:
                 type: string
                 x-go-name: Email
+            following:
+                items:
+                    type: string
+                type: array
+                x-go-name: Following
             id:
                 type: string
                 x-go-name: ID
-            name:
-                type: string
-                x-go-name: Name
             password:
                 type: string
                 x-go-name: Password
@@ -82,19 +176,7 @@ paths:
                 - in: body
                   name: Body
                   schema:
-                    properties:
-                        name:
-                            description: Name of the live stream
-                            type: string
-                            x-go-name: Name
-                        user_id:
-                            description: User ID of the stream creator
-                            type: string
-                            x-go-name: UserId
-                    required:
-                        - user_id
-                        - name
-                    type: object
+                    $ref: '#/definitions/CreateLiveStreamBody'
             responses:
                 "201":
                     $ref: '#/responses/liveStreamResponse'
@@ -138,6 +220,11 @@ paths:
     /livestreams/update/{id}:
         patch:
             operationId: updateLiveStream
+            parameters:
+                - in: body
+                  name: Body
+                  schema:
+                    $ref: '#/definitions/UpdateLiveStreamBody'
             responses:
                 "200":
                     $ref: '#/responses/messageResponse'
@@ -173,6 +260,11 @@ paths:
                 - users
         patch:
             operationId: updateUser
+            parameters:
+                - in: body
+                  name: Body
+                  schema:
+                    $ref: '#/definitions/UpdateUserBody'
             responses:
                 "200":
                     $ref: '#/responses/messageResponse'
@@ -203,19 +295,7 @@ paths:
                 - in: body
                   name: Body
                   schema:
-                    properties:
-                        email:
-                            description: User's email
-                            type: string
-                            x-go-name: Email
-                        password:
-                            description: User's password
-                            type: string
-                            x-go-name: Password
-                    required:
-                        - email
-                        - password
-                    type: object
+                    $ref: '#/definitions/LoginBody'
             responses:
                 "200":
                     $ref: '#/responses/tokenResponse'
@@ -235,29 +315,7 @@ paths:
                 - in: body
                   name: Body
                   schema:
-                    properties:
-                        email:
-                            description: User's email
-                            type: string
-                            x-go-name: Email
-                        name:
-                            description: User's name
-                            type: string
-                            x-go-name: Name
-                        password:
-                            description: User's password
-                            type: string
-                            x-go-name: Password
-                        username:
-                            description: User's username
-                            type: string
-                            x-go-name: Username
-                    required:
-                        - name
-                        - username
-                        - email
-                        - password
-                    type: object
+                    $ref: '#/definitions/SignupBody'
             responses:
                 "201":
                     $ref: '#/responses/tokenResponse'
@@ -312,6 +370,17 @@ responses:
                 token:
                     type: string
                     x-go-name: Token
+            type: object
+    userListResponse:
+        description: UserListResponseWrapper contains a user list response.
+        schema:
+            properties:
+                users:
+                    description: The user details
+                    items:
+                        $ref: '#/definitions/User'
+                    type: array
+                    x-go-name: Users
             type: object
     userResponse:
         description: UserResponseWrapper contains a user response.

@@ -29,10 +29,11 @@ func setupRouter(env ServerEnv) *gin.Engine {
 	users := router.Group("/user")
 	users.POST("/login", env.login)
 	users.POST("/signup", env.signup)
-	users.GET("/all", env.getAllUsers)
 	users.GET("/:id", authMiddleware(), env.getUserProfile)
 	users.DELETE("/delete/:id", authMiddleware(), env.deleteUser)
 	users.PATCH("/update/:id", authMiddleware(), env.updateUser)
+
+	users.GET("/all", env.getAllUsers)
 
 	streams := router.Group("/livestreams")
 	streams.POST("/create", authMiddleware(), env.createLiveStream)
