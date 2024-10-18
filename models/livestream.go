@@ -3,13 +3,12 @@ package models
 import (
 	"time"
 
-	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type LiveStreamRepositoryInterface interface {
-	CreateLiveStream(name string, publisherId primitive.ObjectID) (interface{}, error)
+	CreateLiveStream(name string, streamKey string, publisherId primitive.ObjectID) (interface{}, error)
 	DeleteLiveStream(id primitive.ObjectID) error
 	DeleteLiveStreamsByPublisher(id primitive.ObjectID) error
 
@@ -41,14 +40,13 @@ type LiveStream struct {
 	UpdatedAt time.Time `bson:"updated_at" json:"updated_at"`
 }
 
-func NewLiveStream(name string, publisherId primitive.ObjectID) *LiveStream {
-	streamId, _ := uuid.NewV6()
+func NewLiveStream(name string, publisherId primitive.ObjectID, streamKey string) *LiveStream {
 	return &LiveStream{
 		Name:        name,
 		PublisherId: publisherId,
 		LiveStatus:  false,
 		ViewerCount: 0,
-		StreamKey:   streamId.String(),
+		StreamKey:   streamKey,
 
 		CreatedAt: time.Now(),
 	}

@@ -27,9 +27,9 @@ func NewLiveStreamRepository(db *db.Database, liveStreamCollectionName string) *
 	}
 }
 
-func (lr *LiveStreamRepository) CreateLiveStream(name string, publisherId primitive.ObjectID) (interface{}, error) {
+func (lr *LiveStreamRepository) CreateLiveStream(name string, streamKey string, publisherId primitive.ObjectID) (interface{}, error) {
 	coll := lr.Db.Collection(lr.liveStreamCollectionName)
-	doc := models.NewLiveStream(name, publisherId)
+	doc := models.NewLiveStream(name, publisherId, streamKey)
 
 	res, err := coll.InsertOne(context.TODO(), doc)
 	if err != nil {

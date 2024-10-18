@@ -5,118 +5,11 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gtvb/livestream/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
-
-type UpdateUserBody struct {
-	// User's username
-	// required: true
-	Username string `json:"username"`
-	// User's email
-	// required: true
-	Email string `json:"email"`
-	// User's password
-	// required: true
-	Password string `json:"password"`
-}
-
-// UpdateUserParamsWrapper contains parameters for updating a user
-// swagger:parameters updateUser
-type UpdateUserParamsWrapper struct {
-	// in:body
-	Body UpdateUserBody
-}
-
-type LoginBody struct {
-	// User's email
-	// required: true
-	Email string `json:"email"`
-	// User's password
-	// required: true
-	Password string `json:"password"`
-}
-
-// LoginParamsWrapper contains parameters for user login.
-// swagger:parameters loginUser
-type LoginParamsWrapper struct {
-	// in:body
-	Body LoginBody
-}
-
-type SignupBody struct {
-	// User's name
-	// required: true
-	Name string `json:"name"`
-	// User's username
-	// required: true
-	Username string `json:"username"`
-	// User's email
-	// required: true
-	Email string `json:"email"`
-	// User's password
-	// required: true
-	Password string `json:"password"`
-}
-
-// SignupParamsWrapper contains parameters for user signup.
-// swagger:parameters signupUser
-type SignupParamsWrapper struct {
-	// in:body
-	Body SignupBody
-}
-
-// UserResponseWrapper contains a user response.
-// swagger:response userResponse
-type UserResponseWrapper struct {
-	// in:body
-	Body struct {
-		// The user details
-		User models.User `json:"user"`
-	}
-}
-
-// UserListResponseWrapper contains a user list response.
-// swagger:response userListResponse
-type UserListResponseWrapper struct {
-	// in:body
-	Body struct {
-		// The user details
-		Users []models.User `json:"users"`
-	}
-}
-
-// LiveStreamsResponseWrapper contains a response with live streams.
-// swagger:response liveStreamsResponse
-type LiveStreamsResponseWrapper struct {
-	// in:body
-	Body struct {
-		// List of live streams
-		LiveStreams []models.LiveStream `json:"livestreams"`
-	}
-}
-
-// TokenResponseWrapper contains a token response.
-// swagger:response tokenResponse
-type TokenResponseWrapper struct {
-	// The JWT token for future protected requests.
-	// required: true
-	Body struct {
-		Token string `json:"token"`
-	}
-}
-
-// MessageResponseWrapper contains a message response.
-// swagger:response messageResponse
-type MessageResponseWrapper struct {
-	Body struct {
-		// A descriptive message
-		Message string `json:"message"`
-	}
-}
 
 // swagger:route POST /users/login users loginUser
 //
@@ -334,6 +227,94 @@ func (env *ServerEnv) updateUser(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "updated user with success"})
+}
+
+// swagger:route PATCH /users/follow/{user_id} users followUser
+//
+// Makes the user id on the body follow `user_id` in the params.
+//
+// Responses:
+//
+//	200: messageResponse
+//	400: messageResponse
+func (env *ServerEnv) followUser(ctx *gin.Context) {
+	followee := ctx.Param("user_id")
+	followeeID, err := primitive.ObjectIDFromHex(followee)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid id"})
+		return
+	}
+
+	// Obtemos o que vai ser seguido no banco
+	followeeFromDb, err := env.userRepository.GetUserById(followeeID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "could not fetch user from db: " + err.Error()})
+		return
+	}
+
+	var followBody FollowBody
+	if err := ctx.ShouldBindBodyWithJSON(&followBody); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "failed to bind body"})
+		return
+	}
+
+	// Obtemos também o que vai seguir
+	followerFromDb, err := env.userRepository.GetUserById(followBody.UserID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "could not fetch user from db: " + err.Error()})
+		return
+	}
+
+	if err = env.userRepository.UpdateUserAddToFollowList(followerFromDb.ID, followeeFromDb.ID); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "could not follow this user: " + err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "successfully followed user"})
+}
+
+// swagger:route PATCH /users/unfollow/{user_id} users unfollowUser
+//
+// Makes the user id on the body unfollow `user_id` in the params.
+//
+// Responses:
+//
+//	200: messageResponse
+//	400: messageResponse
+func (env *ServerEnv) unfollowUser(ctx *gin.Context) {
+	followee := ctx.Param("user_id")
+	followeeID, err := primitive.ObjectIDFromHex(followee)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid id"})
+		return
+	}
+
+	// Obtemos o que vai ser seguido no banco
+	followeeFromDb, err := env.userRepository.GetUserById(followeeID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "could not fetch user from db: " + err.Error()})
+		return
+	}
+
+	var followBody FollowBody
+	if err := ctx.ShouldBindBodyWithJSON(&followBody); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "failed to bind body"})
+		return
+	}
+
+	// Obtemos também o que vai seguir
+	followerFromDb, err := env.userRepository.GetUserById(followBody.UserID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "could not fetch user from db: " + err.Error()})
+		return
+	}
+
+	if err = env.userRepository.UpdateUserRemoveFromFollowList(followerFromDb.ID, followeeFromDb.ID); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "could not follow this user: " + err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "successfully unfollowed user"})
 }
 
 // swagger:route GET /users/all users getAllUsers

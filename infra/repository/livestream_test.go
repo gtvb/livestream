@@ -16,7 +16,7 @@ func TestCreateLiveStream(t *testing.T) {
 	liveStreamRepo := NewLiveStreamRepository(container.Database, utils.LiveStreamCollectionTest)
 
 	publisherID := primitive.NewObjectID()
-	insertedID, err := liveStreamRepo.CreateLiveStream("Test Stream", publisherID)
+	insertedID, err := liveStreamRepo.CreateLiveStream("Test Stream", "streamkey-test", publisherID)
 
 	assert.NoError(t, err)
 	assert.NotEqual(t, primitive.NilObjectID, insertedID)
@@ -30,7 +30,7 @@ func TestDeleteLiveStream(t *testing.T) {
 
 	publisherID := primitive.NewObjectID()
 
-	insertedID, err := liveStreamRepo.CreateLiveStream("Test Stream", publisherID)
+	insertedID, err := liveStreamRepo.CreateLiveStream("Test Stream", "streamkey-test", publisherID)
 	assert.NoError(t, err)
 
 	err = liveStreamRepo.DeleteLiveStream(insertedID.(primitive.ObjectID))
@@ -44,9 +44,9 @@ func TestDeleteLiveStreamsByPublisher(t *testing.T) {
 	liveStreamRepo := NewLiveStreamRepository(container.Database, utils.LiveStreamCollectionTest)
 	publisherID := primitive.NewObjectID()
 
-	_, err := liveStreamRepo.CreateLiveStream("Test Stream 1", publisherID)
+	_, err := liveStreamRepo.CreateLiveStream("Test Stream 1", "streamkey-test", publisherID)
 	assert.NoError(t, err)
-	_, err = liveStreamRepo.CreateLiveStream("Test Stream 2", publisherID)
+	_, err = liveStreamRepo.CreateLiveStream("Test Stream 2", "streamkey-test", publisherID)
 	assert.NoError(t, err)
 
 	err = liveStreamRepo.DeleteLiveStreamsByPublisher(publisherID)
@@ -60,7 +60,7 @@ func TestUpdateLiveStream(t *testing.T) {
 	liveStreamRepo := NewLiveStreamRepository(container.Database, utils.LiveStreamCollectionTest)
 	publisherID := primitive.NewObjectID()
 
-	insertedID, err := liveStreamRepo.CreateLiveStream("Test Stream 1", publisherID)
+	insertedID, err := liveStreamRepo.CreateLiveStream("Test Stream 1", "streamkey-test", publisherID)
 	assert.NoError(t, err)
 
 	err = liveStreamRepo.UpdateLiveStream(insertedID.(primitive.ObjectID), bson.M{"name": "(Updated) Live Stream 1", "live_stream_status": true})
@@ -78,7 +78,7 @@ func TestIncrementLiveStreamUserCount(t *testing.T) {
 	liveStreamRepo := NewLiveStreamRepository(container.Database, utils.LiveStreamCollectionTest)
 	publisherID := primitive.NewObjectID()
 
-	insertedID, err := liveStreamRepo.CreateLiveStream("Test Stream", publisherID)
+	insertedID, err := liveStreamRepo.CreateLiveStream("Test Stream", "streamkey-test", publisherID)
 	assert.NoError(t, err)
 
 	err = liveStreamRepo.IncrementLiveStreamUserCount(insertedID.(primitive.ObjectID))
@@ -92,7 +92,7 @@ func TestDecrementLiveStreamUserCount(t *testing.T) {
 	liveStreamRepo := NewLiveStreamRepository(container.Database, utils.LiveStreamCollectionTest)
 	publisherID := primitive.NewObjectID()
 
-	insertedID, err := liveStreamRepo.CreateLiveStream("Test Stream", publisherID)
+	insertedID, err := liveStreamRepo.CreateLiveStream("Test Stream", "streamkey-test", publisherID)
 	assert.NoError(t, err)
 
 	err = liveStreamRepo.DecrementLiveStreamUserCount(insertedID.(primitive.ObjectID))
@@ -106,7 +106,7 @@ func TestGetLiveStreamById(t *testing.T) {
 	liveStreamRepo := NewLiveStreamRepository(container.Database, utils.LiveStreamCollectionTest)
 	publisherID := primitive.NewObjectID()
 
-	insertedID, err := liveStreamRepo.CreateLiveStream("Test Stream", publisherID)
+	insertedID, err := liveStreamRepo.CreateLiveStream("Test Stream", "streamkey-test", publisherID)
 	assert.NoError(t, err)
 
 	liveStream, err := liveStreamRepo.GetLiveStreamById(insertedID.(primitive.ObjectID))
@@ -122,7 +122,7 @@ func TestGetLiveStreamByName(t *testing.T) {
 	liveStreamRepo := NewLiveStreamRepository(container.Database, utils.LiveStreamCollectionTest)
 
 	publisherID := primitive.NewObjectID()
-	_, err := liveStreamRepo.CreateLiveStream("Test Stream", publisherID)
+	_, err := liveStreamRepo.CreateLiveStream("Test Stream", "streamkey-test", publisherID)
 	assert.NoError(t, err)
 
 	liveStream, err := liveStreamRepo.GetLiveStreamByName("Test Stream")
@@ -138,9 +138,9 @@ func TestGetAllLiveStreamsByUserId(t *testing.T) {
 	liveStreamRepo := NewLiveStreamRepository(container.Database, utils.LiveStreamCollectionTest)
 	publisherID := primitive.NewObjectID()
 
-	_, err := liveStreamRepo.CreateLiveStream("Test Stream 1", publisherID)
+	_, err := liveStreamRepo.CreateLiveStream("Test Stream 1", "streamkey-test", publisherID)
 	assert.NoError(t, err)
-	_, err = liveStreamRepo.CreateLiveStream("Test Stream 2", publisherID)
+	_, err = liveStreamRepo.CreateLiveStream("Test Stream 2", "streamkey-test", publisherID)
 	assert.NoError(t, err)
 
 	liveStreams, err := liveStreamRepo.GetAllLiveStreamsByUserId(publisherID)
@@ -156,9 +156,9 @@ func TestGetAllLiveStreams(t *testing.T) {
 	liveStreamRepo := NewLiveStreamRepository(container.Database, utils.LiveStreamCollectionTest)
 	publisherID := primitive.NewObjectID()
 
-	_, err := liveStreamRepo.CreateLiveStream("Test Stream 1", publisherID)
+	_, err := liveStreamRepo.CreateLiveStream("Test Stream 1", "streamkey-test", publisherID)
 	assert.NoError(t, err)
-	_, err = liveStreamRepo.CreateLiveStream("Test Stream 2", publisherID)
+	_, err = liveStreamRepo.CreateLiveStream("Test Stream 2", "streamkey-test", publisherID)
 	assert.NoError(t, err)
 
 	liveStreams, err := liveStreamRepo.GetAllLiveStreams()

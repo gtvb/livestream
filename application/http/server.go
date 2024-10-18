@@ -32,7 +32,10 @@ func setupRouter(env ServerEnv) *gin.Engine {
 	users.GET("/:id", authMiddleware(), env.getUserProfile)
 	users.DELETE("/delete/:id", authMiddleware(), env.deleteUser)
 	users.PATCH("/update/:id", authMiddleware(), env.updateUser)
+	users.PATCH("/follow/:user_id", authMiddleware(), env.followUser)
+	users.PATCH("/unfollow/:user_id", authMiddleware(), env.unfollowUser)
 
+	// Pode ser removida mais tarde, apenas auxiliar
 	users.GET("/all", env.getAllUsers)
 
 	streams := router.Group("/livestreams")

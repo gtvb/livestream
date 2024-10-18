@@ -101,6 +101,50 @@ func TestUpdateUser(t *testing.T) {
 	assert.Contains(t, writer.Body.String(), "updated user with success")
 }
 
+func TestFollowUser(t *testing.T) {
+	container := setupDatabase()
+	defer container.Terminate()
+
+	env := setupEnv(container.Database)
+
+	id1, _ := env.userRepository.CreateUser("test_username1", "test1@email.com", hashPassword(("test1")))
+	id2, _ := env.userRepository.CreateUser("test_username2", "test2@email.com", hashPassword(("test2")))
+	user1ID := id1.(primitive.ObjectID)
+	user2ID := id2.(primitive.ObjectID)
+
+	followBody := FollowBody{
+		UserID: user1ID,
+	}
+
+	router := setupRouter(env)
+	writer := makeRequest(router, "PATCH", "/user/follow/"+user2ID.Hex(), followBody, &AuthParams{Email: "test1@email.com", Password: "test1"})
+
+	assert.Equal(t, http.StatusOK, writer.Code)
+	assert.Contains(t, writer.Body.String(), "success")
+}
+
+func TestUnFollowUser(t *testing.T) {
+	container := setupDatabase()
+	defer container.Terminate()
+
+	env := setupEnv(container.Database)
+
+	id1, _ := env.userRepository.CreateUser("test_username1", "test1@email.com", hashPassword(("test1")))
+	id2, _ := env.userRepository.CreateUser("test_username2", "test2@email.com", hashPassword(("test2")))
+	user1ID := id1.(primitive.ObjectID)
+	user2ID := id2.(primitive.ObjectID)
+
+	followBody := FollowBody{
+		UserID: user1ID,
+	}
+
+	router := setupRouter(env)
+	writer := makeRequest(router, "PATCH", "/user/unfollow/"+user2ID.Hex(), followBody, &AuthParams{Email: "test1@email.com", Password: "test1"})
+
+	assert.Equal(t, http.StatusOK, writer.Code)
+	assert.Contains(t, writer.Body.String(), "success")
+}
+
 func TestGetAllUsers(t *testing.T) {
 	container := setupDatabase()
 	defer container.Terminate()

@@ -7,53 +7,12 @@ import (
 	"net/url"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
-
-type UpdateLiveStreamBody struct {
-	// Live Status. On or off
-	// required: true
-	LiveStatus *bool `json:"live_stream_status"`
-	// Name of the live stream
-	// required: true
-	Name string `json:"name"`
-}
-
-// UpdateLiveStreamParamsWrapper contains parameters for updating a live stream.
-// swagger:parameters updateLiveStream
-type UpdateLiveStreamParamsWrapper struct {
-	// in:body
-	Body UpdateLiveStreamBody
-}
-
-type CreateLiveStreamBody struct {
-	// User ID of the stream creator
-	// required: true
-	UserId string `json:"user_id"`
-	// Name of the live stream
-	// required: true
-	Name string `json:"name"`
-}
-
-// CreateLiveStreamParamsWrapper contains parameters for creating a live stream.
-// swagger:parameters createLiveStream
-type CreateLiveStreamParamsWrapper struct {
-	// in:body
-	Body CreateLiveStreamBody
-}
-
-// LiveStreamResponseWrapper contains a response with live stream data.
-// swagger:response liveStreamResponse
-type LiveStreamResponseWrapper struct {
-	// in:body
-	Body struct {
-		// ID of the live stream
-		StreamId primitive.ObjectID `json:"stream_id"`
-	}
-}
 
 // swagger:route POST /livestreams/create livestreams createLiveStream
 //
@@ -79,6 +38,7 @@ func (env *ServerEnv) createLiveStream(ctx *gin.Context) {
 		return
 	}
 
+	// Get the user responsibe foe this livestream
 	_, err = env.userRepository.GetUserById(id)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -89,7 +49,22 @@ func (env *ServerEnv) createLiveStream(ctx *gin.Context) {
 		return
 	}
 
-	_, err = env.liveStreamsRepository.CreateLiveStream(createLiveStreamBody.Name, id)
+	// Generate a streamkey for this user, based on his password
+	streamKey, err := uuid.NewV7()
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	// // Verify the password
+	// if err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(createLiveStreamBody.Password)); err != nil {
+	// 	ctx.JSON(http.StatusBadRequest, gin.H{"message": "incorrect password"})
+	// 	return
+	// }
+
+	// // TODO: Encrypt the streamkey using the password
+
+	_, err = env.liveStreamsRepository.CreateLiveStream(createLiveStreamBody.Name, streamKey.String(), id)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -161,7 +136,7 @@ func (env *ServerEnv) updateLiveStream(ctx *gin.Context) {
 
 	err = env.liveStreamsRepository.UpdateLiveStream(streamID, newData)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "falha ao atualizar a live: " + err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "falha ao atualizar a live"})
 		return
 	}
 
