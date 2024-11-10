@@ -55,9 +55,6 @@ type LoginParamsWrapper struct {
 }
 
 type SignupBody struct {
-	// User's name
-	// required: true
-	Name string `json:"name"`
 	// User's username
 	// required: true
 	Username string `json:"username"`
@@ -129,10 +126,10 @@ type MessageResponseWrapper struct {
 
 type UpdateLiveStreamBody struct {
 	// Live Status. On or off
-	// required: true
+	// required: false
 	LiveStatus *bool `json:"live_stream_status"`
 	// Name of the live stream
-	// required: true
+	// required: false
 	Name string `json:"name"`
 }
 
@@ -152,7 +149,7 @@ type CreateLiveStreamBody struct {
 	Name string `json:"name"`
 	// User password (unhashed, obviously)
 	// required: true
-	Password string `json:"password"`
+	Thubmnail string `json:"thumbnail"`
 }
 
 // CreateLiveStreamParamsWrapper contains parameters for creating a live stream.

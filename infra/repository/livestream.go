@@ -9,6 +9,7 @@ import (
 	"github.com/gtvb/livestream/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // Repositório de acesso aos dados da entidade `LiveStream`.
@@ -27,9 +28,9 @@ func NewLiveStreamRepository(db *db.Database, liveStreamCollectionName string) *
 	}
 }
 
-func (lr *LiveStreamRepository) CreateLiveStream(name string, streamKey string, publisherId primitive.ObjectID) (interface{}, error) {
+func (lr *LiveStreamRepository) CreateLiveStream(name string, thumbnail string, streamKey string, publisherId primitive.ObjectID) (interface{}, error) {
 	coll := lr.Db.Collection(lr.liveStreamCollectionName)
-	doc := models.NewLiveStream(name, publisherId, streamKey)
+	doc := models.NewLiveStream(name, thumbnail, publisherId, streamKey)
 
 	res, err := coll.InsertOne(context.TODO(), doc)
 	if err != nil {
@@ -159,6 +160,32 @@ func (lr *LiveStreamRepository) GetLiveStreamByStreamKey(key string) (*models.Li
 
 func (lr *LiveStreamRepository) GetAllLiveStreamsByUserId(id primitive.ObjectID) ([]*models.LiveStream, error) {
 	return lr.getLiveStreamByParamBatch(bson.M{"publisher_id": id})
+}
+
+func (lr *LiveStreamRepository) GetLiveStreamFeed(maxStreams int) ([]*models.LiveStream, error) {
+	var liveStreams []*models.LiveStream
+	coll := lr.Db.Collection(lr.liveStreamCollectionName)
+
+	// oneHourAgo := time.Now().Add(-1 * time.Hour)
+
+	filter := bson.M{
+		// "created_at": bson.M{
+		// 	"$gte": oneHourAgo,
+		// },
+		"live_stream_status": true,
+	}
+
+	cursor, err := coll.Find(context.TODO(), filter, options.Find().SetLimit(int64(maxStreams)))
+	if err != nil {
+		return nil, err
+	}
+
+	err = cursor.All(context.TODO(), &liveStreams)
+	if err != nil {
+		return nil, err
+	}
+
+	return liveStreams, nil
 }
 
 // Método genérico, pode ser substituído por uma busca mais específica

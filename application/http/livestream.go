@@ -1,16 +1,16 @@
 package http
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
+	"path/filepath"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -25,52 +25,51 @@ import (
 //	404: messageResponse
 //	500: messageResponse
 func (env *ServerEnv) createLiveStream(ctx *gin.Context) {
-	var createLiveStreamBody CreateLiveStreamBody
+	ctx.Request.ParseMultipartForm(10 << 20)
 
-	if err := ctx.ShouldBindBodyWithJSON(&createLiveStreamBody); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "could not get body from request"})
-		return
-	}
+	id := ctx.PostForm("publisher_id")
+	name := ctx.PostForm("name")
+	file, err := ctx.FormFile("thumbnail")
 
-	id, err := primitive.ObjectIDFromHex(createLiveStreamBody.UserId)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		fmt.Println("Error getting file")
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "não foi possível obter a imagem"})
 		return
 	}
 
-	// Get the user responsibe foe this livestream
-	_, err = env.userRepository.GetUserById(id)
+	userId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			ctx.JSON(http.StatusNotFound, gin.H{"message": "a user with this id does not exist"})
-		} else {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		}
+		fmt.Println("Error getting user")
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "ID inválido"})
 		return
 	}
 
-	// Generate a streamkey for this user, based on his password
+	_, err = env.userRepository.GetUserById(userId)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "usuário não encontrado"})
+		return
+	}
+
 	streamKey, err := uuid.NewV7()
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "falha ao gerar a chave de stream"})
 		return
 	}
 
-	// // Verify the password
-	// if err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(createLiveStreamBody.Password)); err != nil {
-	// 	ctx.JSON(http.StatusBadRequest, gin.H{"message": "incorrect password"})
-	// 	return
-	// }
+	filePath := filepath.Join("uploads", file.Filename)
+	if err := ctx.SaveUploadedFile(file, filePath); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "falha ao salvar a imagem"})
+		return
+	}
 
-	// // TODO: Encrypt the streamkey using the password
-
-	_, err = env.liveStreamsRepository.CreateLiveStream(createLiveStreamBody.Name, streamKey.String(), id)
+	fileUrl := fmt.Sprintf("http://localhost:3333/thumbs/%s", file.Filename)
+	streamId, err := env.liveStreamsRepository.CreateLiveStream(name, fileUrl, streamKey.String(), userId)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "falha ao criar a live"})
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, gin.H{"message": "livestream created"})
+	ctx.JSON(http.StatusCreated, gin.H{"stream_id": streamId})
 }
 
 // swagger:route DELETE /livestreams/delete/{id} livestreams deleteLiveStream
@@ -168,6 +167,37 @@ func (env *ServerEnv) getLiveStreamData(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"livestream": livestream})
+}
+
+func (env *ServerEnv) getFeed(ctx *gin.Context) {
+	numStreams := 20
+	q := ctx.Query("q")
+	if q != "" {
+		qInt, err := strconv.Atoi(q)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "q needs to be an integer"})
+			return
+		}
+		numStreams = qInt
+	}
+
+	livestreams, err := env.liveStreamsRepository.GetLiveStreamFeed(numStreams)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "failed to get livestream feed"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"livestreams": livestreams})
+}
+
+func (env *ServerEnv) getAllStreams(ctx *gin.Context) {
+	livestreams, err := env.liveStreamsRepository.GetAllLiveStreams()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "failed to get livestreams"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"livestreams": livestreams})
 }
 
 func (env *ServerEnv) validateStream(ctx *gin.Context) {

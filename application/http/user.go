@@ -17,7 +17,7 @@ import (
 //
 // Responses:
 //
-//	200: tokenResponse
+//	200: messageResponse
 //	400: messageResponse
 //	404: messageResponse
 //	500: messageResponse
@@ -51,7 +51,8 @@ func (env *ServerEnv) login(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"token": token})
+	ctx.SetCookie("auth", token, 3600, "/", "localhost", false, true)
+	ctx.JSON(http.StatusOK, gin.H{"user": user})
 }
 
 // swagger:route POST /users/signup users signupUser
@@ -60,7 +61,7 @@ func (env *ServerEnv) login(ctx *gin.Context) {
 //
 // Responses:
 //
-//	201: tokenResponse
+//	201: messageResponse
 //	400: messageResponse
 //	500: messageResponse
 func (env *ServerEnv) signup(ctx *gin.Context) {
@@ -88,19 +89,13 @@ func (env *ServerEnv) signup(ctx *gin.Context) {
 		return
 	}
 
-	userId, err := env.userRepository.CreateUser(signupBody.Username, signupBody.Email, string(hashedPassword))
+	_, err = env.userRepository.CreateUser(signupBody.Username, signupBody.Email, string(hashedPassword))
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 
-	token, err := generateToken(userId)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-
-	ctx.JSON(http.StatusCreated, gin.H{"token": token})
+	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
 }
 
 // swagger:route GET /users/{id} users getUserProfile

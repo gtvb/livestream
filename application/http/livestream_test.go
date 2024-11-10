@@ -70,7 +70,7 @@ func TestDeleteLiveStream(t *testing.T) {
 	authParams := &AuthParams{Email: user.Email, Password: user.Password}
 
 	t.Run("Successfully create stream", func(t *testing.T) {
-		streamID, err := env.liveStreamsRepository.CreateLiveStream("Test Stream", "streamkey-test", user.ID)
+		streamID, err := env.liveStreamsRepository.CreateLiveStream("Test Stream", "fake-thumbnail", "streamkey-test", user.ID)
 		if err != nil {
 			t.Fatalf("Failed to create test live stream: %v", err)
 		}
@@ -104,7 +104,7 @@ func TestGetLiveStreamInfo(t *testing.T) {
 
 	authParams := &AuthParams{Email: user.Email, Password: user.Password}
 
-	streamID, err := env.liveStreamsRepository.CreateLiveStream("Test Stream", "streamkey-test", user.ID)
+	streamID, err := env.liveStreamsRepository.CreateLiveStream("Test Stream", "fake-thumbnail", "streamkey-test", user.ID)
 	if err != nil {
 		t.Fatalf("Failed to create test live stream: %v", err)
 	}

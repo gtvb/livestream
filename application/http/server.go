@@ -23,28 +23,50 @@ type ServerEnv struct {
 	userRepository        models.UserRepositoryInterface
 }
 
+func CORSMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	}
+}
+
 func setupRouter(env ServerEnv) *gin.Engine {
 	router := gin.Default()
+	router.Use(CORSMiddleware())
+
+	router.Static("/thumbs", "./uploads")
 
 	users := router.Group("/user")
 	users.POST("/login", env.login)
 	users.POST("/signup", env.signup)
-	users.GET("/:id", authMiddleware(), env.getUserProfile)
-	users.DELETE("/delete/:id", authMiddleware(), env.deleteUser)
-	users.PATCH("/update/:id", authMiddleware(), env.updateUser)
-	users.PATCH("/follow/:user_id", authMiddleware(), env.followUser)
-	users.PATCH("/unfollow/:user_id", authMiddleware(), env.unfollowUser)
+	users.GET("/:id", env.getUserProfile)
+	users.DELETE("/delete/:id", env.deleteUser)
+	users.PATCH("/update/:id", env.updateUser)
+	users.PATCH("/follow/:user_id", env.followUser)
+	users.PATCH("/unfollow/:user_id", env.unfollowUser)
 
 	// Pode ser removida mais tarde, apenas auxiliar
 	users.GET("/all", env.getAllUsers)
 
 	streams := router.Group("/livestreams")
-	streams.POST("/create", authMiddleware(), env.createLiveStream)
-	streams.DELETE("/delete/:id", authMiddleware(), env.deleteLiveStream)
-	streams.PATCH("/update/:id", authMiddleware(), env.updateLiveStream)
-	streams.GET("/:user_id", authMiddleware(), env.getUserLiveStreams)
-	streams.GET("/info/:id", authMiddleware(), env.getLiveStreamData)
+	streams.POST("/create", env.createLiveStream)
+	streams.DELETE("/delete/:id", env.deleteLiveStream)
+	streams.PATCH("/update/:id", env.updateLiveStream)
+	streams.GET("/feed", env.getFeed)
+	streams.GET("/:user_id", env.getUserLiveStreams)
+	streams.GET("/info/:id", env.getLiveStreamData)
 	streams.GET("/on_publish", env.validateStream)
+
+	streams.GET("/all", env.getAllStreams)
 
 	return router
 }

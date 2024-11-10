@@ -8,7 +8,7 @@ import (
 )
 
 type LiveStreamRepositoryInterface interface {
-	CreateLiveStream(name string, streamKey string, publisherId primitive.ObjectID) (interface{}, error)
+	CreateLiveStream(name string, thumbnail string, streamKey string, publisherId primitive.ObjectID) (interface{}, error)
 	DeleteLiveStream(id primitive.ObjectID) error
 	DeleteLiveStreamsByPublisher(id primitive.ObjectID) error
 
@@ -21,14 +21,16 @@ type LiveStreamRepositoryInterface interface {
 	GetLiveStreamById(id primitive.ObjectID) (*LiveStream, error)
 	GetLiveStreamByName(name string) (*LiveStream, error)
 	GetLiveStreamByStreamKey(key string) (*LiveStream, error)
+	GetLiveStreamFeed(maxStreams int) ([]*LiveStream, error)
 	GetAllLiveStreams() ([]*LiveStream, error)
 }
 
 // Representa uma livestream acontecendo na plataforma
 // swagger:model
 type LiveStream struct {
-	ID   primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	Name string             `json:"name"`
+	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	Name      string             `json:"name"`
+	Thubmnail string             `json:"thumbnail"`
 
 	StreamKey   string             `bson:"stream_key" json:"stream_key"`
 	ViewerCount int                `bson:"viewer_count" json:"viewer_count"`
@@ -40,9 +42,10 @@ type LiveStream struct {
 	UpdatedAt time.Time `bson:"updated_at" json:"updated_at"`
 }
 
-func NewLiveStream(name string, publisherId primitive.ObjectID, streamKey string) *LiveStream {
+func NewLiveStream(name string, thumbnail string, publisherId primitive.ObjectID, streamKey string) *LiveStream {
 	return &LiveStream{
 		Name:        name,
+		Thubmnail:   thumbnail,
 		PublisherId: publisherId,
 		LiveStatus:  false,
 		ViewerCount: 0,
