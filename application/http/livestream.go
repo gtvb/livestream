@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/gtvb/livestream/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
@@ -187,7 +188,18 @@ func (env *ServerEnv) getFeed(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"livestreams": livestreams})
+    var users []*models.User
+    for _, stream := range livestreams {
+        user, err := env.userRepository.GetUserById(stream.PublisherId)
+        if err != nil {
+            ctx.JSON(http.StatusInternalServerError, gin.H{"message": "could not get user for this stream"})
+            return
+        }
+
+        users = append(users, user)
+    }
+
+    ctx.JSON(http.StatusOK, gin.H{"livestreams": livestreams, "users": users})
 }
 
 func (env *ServerEnv) getAllStreams(ctx *gin.Context) {
