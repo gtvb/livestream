@@ -33,14 +33,12 @@ func (env *ServerEnv) createLiveStream(ctx *gin.Context) {
 	file, err := ctx.FormFile("thumbnail")
 
 	if err != nil {
-		fmt.Println("Error getting file")
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "não foi possível obter a imagem"})
 		return
 	}
 
 	userId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		fmt.Println("Error getting user")
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "ID inválido"})
 		return
 	}
@@ -88,13 +86,13 @@ func (env *ServerEnv) deleteLiveStream(ctx *gin.Context) {
 
 	id, err := primitive.ObjectIDFromHex(streamId)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid ID"})
 		return
 	}
 
 	err = env.liveStreamsRepository.DeleteLiveStream(id)
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"message": "failed to delete live stream"})
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "failed to delete stream"})
 		return
 	}
 
@@ -115,13 +113,13 @@ func (env *ServerEnv) updateLiveStream(ctx *gin.Context) {
 	id := ctx.Param("id")
 	streamID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "unparseable ID"})
 		return
 	}
 
 	var updateLiveStreamBody UpdateLiveStreamBody
 	if err := ctx.ShouldBindBodyWithJSON(&updateLiveStreamBody); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "não foi possível interpretar o corpo da requisição"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "malformed request"})
 		return
 	}
 
@@ -136,11 +134,11 @@ func (env *ServerEnv) updateLiveStream(ctx *gin.Context) {
 
 	err = env.liveStreamsRepository.UpdateLiveStream(streamID, newData)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "falha ao atualizar a live"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "failed to update stream"})
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "live atualizada com sucesso"})
+	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
 }
 
 // swagger:route GET /livestreams/info/{id} livestreams getLiveStreamData
@@ -151,25 +149,34 @@ func (env *ServerEnv) updateLiveStream(ctx *gin.Context) {
 //
 //	200: liveStreamResponse
 //	404: messageResponse
-//	500: messageResponse
 func (env *ServerEnv) getLiveStreamData(ctx *gin.Context) {
 	streamId := ctx.Param("id")
 
 	id, err := primitive.ObjectIDFromHex(streamId)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "unparseable ID"})
 		return
 	}
 
 	livestream, err := env.liveStreamsRepository.GetLiveStreamById(id)
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"message": "failed to find live stream"})
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "failed to find stream"})
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"livestream": livestream})
 }
 
+// generate swagger documentation for this function
+// swagger:route GET /livestreams/feed livestreams getLiveStreamFeed
+//
+// Get a feed of live streams.
+//
+// Responses:
+//
+//	200: liveStreamFeedResponse
+//	400: messageResponse
+//	500: messageResponse
 func (env *ServerEnv) getFeed(ctx *gin.Context) {
 	numStreams := 20
 	q := ctx.Query("q")
@@ -188,18 +195,18 @@ func (env *ServerEnv) getFeed(ctx *gin.Context) {
 		return
 	}
 
-    var users []*models.User
-    for _, stream := range livestreams {
-        user, err := env.userRepository.GetUserById(stream.PublisherId)
-        if err != nil {
-            ctx.JSON(http.StatusInternalServerError, gin.H{"message": "could not get user for this stream"})
-            return
-        }
+	var users []*models.User
+	for _, stream := range livestreams {
+		user, err := env.userRepository.GetUserById(stream.PublisherId)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"message": "could not get user for this stream"})
+			return
+		}
 
-        users = append(users, user)
-    }
+		users = append(users, user)
+	}
 
-    ctx.JSON(http.StatusOK, gin.H{"livestreams": livestreams, "users": users})
+	ctx.JSON(http.StatusOK, gin.H{"livestreams": livestreams, "users": users})
 }
 
 func (env *ServerEnv) getAllStreams(ctx *gin.Context) {

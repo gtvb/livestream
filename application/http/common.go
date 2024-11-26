@@ -13,11 +13,6 @@ import (
 	"github.com/gtvb/livestream/utils"
 )
 
-type AuthParams struct {
-	Email    string
-	Password string
-}
-
 func setupDatabase() *utils.TestContainer {
 	container, err := utils.NewTestContainer("ls-db-test")
 	if err != nil {
@@ -44,24 +39,12 @@ func setupEnv(database *db.Database) ServerEnv {
 	return env
 }
 
-func makeRequest(router *gin.Engine, method, url string, body interface{}, authParams *AuthParams) *httptest.ResponseRecorder {
+func makeRequest(router *gin.Engine, method, url string, body interface{}) *httptest.ResponseRecorder {
 	requestBody, _ := json.Marshal(body)
 	req, _ := http.NewRequest(method, url, bytes.NewBuffer(requestBody))
-
-	if authParams != nil {
-		req.Header.Set("Authorization", "Bearer "+bearerToken(router, authParams))
-	}
 
 	writer := httptest.NewRecorder()
 	router.ServeHTTP(writer, req)
 
 	return writer
-}
-
-func bearerToken(router *gin.Engine, authParams *AuthParams) string {
-	writer := makeRequest(router, "POST", "/user/login", authParams, nil)
-
-	var response map[string]string
-	json.Unmarshal(writer.Body.Bytes(), &response)
-	return response["token"]
 }

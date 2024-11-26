@@ -40,6 +40,7 @@ func CORSMiddleware() gin.HandlerFunc {
 }
 
 func setupRouter(env ServerEnv) *gin.Engine {
+	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	router.Use(CORSMiddleware())
 

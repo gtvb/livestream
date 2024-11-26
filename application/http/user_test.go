@@ -23,7 +23,7 @@ func TestUserSignup(t *testing.T) {
 	}
 
 	router := setupRouter(env)
-	writer := makeRequest(router, "POST", "/user/signup", signupBody, nil)
+	writer := makeRequest(router, "POST", "/user/signup", signupBody)
 
 	assert.Equal(t, http.StatusCreated, writer.Code)
 	assert.Contains(t, writer.Body.String(), "token")
@@ -42,7 +42,7 @@ func TestUserLogin(t *testing.T) {
 	}
 
 	router := setupRouter(env)
-	writer := makeRequest(router, "POST", "/user/login", loginBody, nil)
+	writer := makeRequest(router, "POST", "/user/login", loginBody)
 
 	assert.Equal(t, http.StatusOK, writer.Code)
 	assert.Contains(t, writer.Body.String(), "token")
@@ -58,7 +58,7 @@ func TestGetUserProfile(t *testing.T) {
 	userID := id.(primitive.ObjectID)
 
 	router := setupRouter(env)
-	writer := makeRequest(router, "GET", "/user/"+userID.Hex(), nil, &AuthParams{Email: "test@email.com", Password: "test_pass"})
+	writer := makeRequest(router, "GET", "/user/"+userID.Hex(), nil)
 
 	assert.Equal(t, http.StatusOK, writer.Code)
 	assert.Contains(t, writer.Body.String(), "test")
@@ -74,7 +74,7 @@ func TestDeleteUser(t *testing.T) {
 	userID := id.(primitive.ObjectID)
 
 	router := setupRouter(env)
-	writer := makeRequest(router, "DELETE", "/user/delete/"+userID.Hex(), nil, &AuthParams{Email: "test@email.com", Password: "test_pass"})
+	writer := makeRequest(router, "DELETE", "/user/delete/"+userID.Hex(), nil)
 
 	assert.Equal(t, http.StatusOK, writer.Code)
 	assert.Contains(t, writer.Body.String(), "user deleted")
@@ -95,7 +95,7 @@ func TestUpdateUser(t *testing.T) {
 	}
 
 	router := setupRouter(env)
-	writer := makeRequest(router, "PATCH", "/user/update/"+userID.Hex(), updateBody, &AuthParams{Email: "test@email.com", Password: "test_pass"})
+	writer := makeRequest(router, "PATCH", "/user/update/"+userID.Hex(), updateBody)
 
 	assert.Equal(t, http.StatusOK, writer.Code)
 	assert.Contains(t, writer.Body.String(), "updated user with success")
@@ -117,7 +117,7 @@ func TestFollowUser(t *testing.T) {
 	}
 
 	router := setupRouter(env)
-	writer := makeRequest(router, "PATCH", "/user/follow/"+user2ID.Hex(), followBody, &AuthParams{Email: "test1@email.com", Password: "test1"})
+	writer := makeRequest(router, "PATCH", "/user/follow/"+user2ID.Hex(), followBody)
 
 	assert.Equal(t, http.StatusOK, writer.Code)
 	assert.Contains(t, writer.Body.String(), "success")
@@ -139,7 +139,7 @@ func TestUnFollowUser(t *testing.T) {
 	}
 
 	router := setupRouter(env)
-	writer := makeRequest(router, "PATCH", "/user/unfollow/"+user2ID.Hex(), followBody, &AuthParams{Email: "test1@email.com", Password: "test1"})
+	writer := makeRequest(router, "PATCH", "/user/unfollow/"+user2ID.Hex(), followBody)
 
 	assert.Equal(t, http.StatusOK, writer.Code)
 	assert.Contains(t, writer.Body.String(), "success")
@@ -162,7 +162,7 @@ func TestGetAllUsers(t *testing.T) {
 	}
 
 	router := setupRouter(env)
-	writer := makeRequest(router, "GET", "/user/all", nil, &AuthParams{Email: "test@email.com", Password: "test_pass"})
+	writer := makeRequest(router, "GET", "/user/all", nil)
 
 	assert.Equal(t, http.StatusOK, writer.Code)
 	// assert.JSONEq(t, string(expectedJSON), writer.Body.String())
