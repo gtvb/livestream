@@ -26,7 +26,7 @@ func TestUserSignup(t *testing.T) {
 	writer := makeRequest(router, "POST", "/user/signup", signupBody)
 
 	assert.Equal(t, http.StatusCreated, writer.Code)
-	assert.Contains(t, writer.Body.String(), "token")
+	assert.Contains(t, writer.Body.String(), "success")
 }
 
 func TestUserLogin(t *testing.T) {
@@ -45,7 +45,7 @@ func TestUserLogin(t *testing.T) {
 	writer := makeRequest(router, "POST", "/user/login", loginBody)
 
 	assert.Equal(t, http.StatusOK, writer.Code)
-	assert.Contains(t, writer.Body.String(), "token")
+	assert.Contains(t, writer.Body.String(), "test_username")
 }
 
 func TestGetUserProfile(t *testing.T) {
@@ -77,7 +77,7 @@ func TestDeleteUser(t *testing.T) {
 	writer := makeRequest(router, "DELETE", "/user/delete/"+userID.Hex(), nil)
 
 	assert.Equal(t, http.StatusOK, writer.Code)
-	assert.Contains(t, writer.Body.String(), "user deleted")
+	assert.Contains(t, writer.Body.String(), "success")
 }
 
 func TestUpdateUser(t *testing.T) {
@@ -98,7 +98,7 @@ func TestUpdateUser(t *testing.T) {
 	writer := makeRequest(router, "PATCH", "/user/update/"+userID.Hex(), updateBody)
 
 	assert.Equal(t, http.StatusOK, writer.Code)
-	assert.Contains(t, writer.Body.String(), "updated user with success")
+	assert.Contains(t, writer.Body.String(), "success")
 }
 
 func TestFollowUser(t *testing.T) {

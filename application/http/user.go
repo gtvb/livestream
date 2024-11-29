@@ -95,7 +95,7 @@ func (env *ServerEnv) signup(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
+	ctx.JSON(http.StatusCreated, gin.H{"message": "success"})
 }
 
 // swagger:route GET /users/{id} users getUserProfile
@@ -177,7 +177,7 @@ func (env *ServerEnv) deleteUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "user deleted"})
+	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
 }
 
 // swagger:route PATCH /users/{id} users updateUser
@@ -221,7 +221,7 @@ func (env *ServerEnv) updateUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "updated user with success"})
+	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
 }
 
 // swagger:route PATCH /users/follow/{user_id} users followUser
@@ -265,7 +265,7 @@ func (env *ServerEnv) followUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "successfully followed user"})
+	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
 }
 
 // swagger:route PATCH /users/unfollow/{user_id} users unfollowUser
@@ -309,7 +309,7 @@ func (env *ServerEnv) unfollowUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "successfully unfollowed user"})
+	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
 }
 
 // swagger:route GET /users/all users getAllUsers

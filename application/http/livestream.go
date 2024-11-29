@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strconv"
 
@@ -33,38 +34,43 @@ func (env *ServerEnv) createLiveStream(ctx *gin.Context) {
 	file, err := ctx.FormFile("thumbnail")
 
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "não foi possível obter a imagem"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "could not obtain the image"})
 		return
 	}
 
 	userId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "ID inválido"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid ID"})
 		return
 	}
 
 	_, err = env.userRepository.GetUserById(userId)
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"message": "usuário não encontrado"})
+		ctx.JSON(http.StatusNotFound, gin.H{"message": "user not found"})
 		return
 	}
 
 	streamKey, err := uuid.NewV7()
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "falha ao gerar a chave de stream"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "failed to generate stream key"})
 		return
 	}
 
 	filePath := filepath.Join("uploads", file.Filename)
 	if err := ctx.SaveUploadedFile(file, filePath); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "falha ao salvar a imagem"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "failed to save the image"})
 		return
 	}
 
-	fileUrl := fmt.Sprintf("http://localhost:3333/thumbs/%s", file.Filename)
+	baseURL := os.Getenv("BASE_URL")
+	if baseURL == "" {
+		baseURL = "http://localhost:3333"
+	}
+
+	fileUrl := fmt.Sprintf("%s/thumbs/%s", baseURL, file.Filename)
 	streamId, err := env.liveStreamsRepository.CreateLiveStream(name, fileUrl, streamKey.String(), userId)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "falha ao criar a live"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "failed to create the live stream"})
 		return
 	}
 
