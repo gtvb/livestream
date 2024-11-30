@@ -40,10 +40,12 @@ func CORSMiddleware() gin.HandlerFunc {
 }
 
 func setupRouter(env ServerEnv) *gin.Engine {
-	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	router.Use(CORSMiddleware())
 
+	router.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{"message": "success"})
+	})
 	router.Static("/thumbs", "./uploads")
 
 	users := router.Group("/user")
