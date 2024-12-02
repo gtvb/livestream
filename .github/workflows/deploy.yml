@@ -1,0 +1,55 @@
+# Crie um deploy que rode toda vez que um push for feito na branch master
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Build
+              run: docker compose build
+
+            - name: Setup doctl
+              uses: digitalocean/action-doctl@master
+              with:
+                token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+            - name: Authenticate
+              run: doctl registry login --expiry-seconds 600
+
+            - name: Push
+              run: docker compose push
+
+            - name: Copy to server
+              uses: appleboy/scp-action@v0.1.3
+              with:
+                host: ${{ secrets.DROPLET_IP }}
+                username: ${{ secrets.SSH_USERNAME }}
+                key: ${{ secrets.SSH_KEY }}
+                passphrase: ${{ secrets.SSH_PASSPHRASE }}
+                port: ${{ secrets.SSH_PORT }}
+
+                source: compose.yml
+                target: ~
+
+            - name: SSH to server
+              uses: appleboy/ssh-action@master
+              with:
+                host: ${{ secrets.DROPLET_IP }}
+                username: ${{ secrets.SSH_USERNAME }}
+                key: ${{ secrets.SSH_KEY }}
+                passphrase: ${{ secrets.SSH_PASSPHRASE }}
+                port: ${{ secrets.SSH_PORT }}
+
+                script: |
+                  cd ~
+                  docker login registry.digitalocean.com -u ${{ secrets.DIGITALOCEAN_EMAIL }} -p ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+                  docker compose pull
+                  docker compose up -d
