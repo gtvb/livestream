@@ -45,13 +45,6 @@ func (env *ServerEnv) login(ctx *gin.Context) {
 		return
 	}
 
-	token, err := generateToken(user.ID)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "failed to generate token"})
-		return
-	}
-
-	ctx.SetCookie("auth", token, 3600, "/", "localhost", false, true)
 	ctx.JSON(http.StatusOK, gin.H{"user": user})
 }
 

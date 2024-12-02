@@ -2,7 +2,7 @@
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
     deploy:
@@ -15,8 +15,8 @@ jobs:
             - name: Build
               run: docker compose build
 
-            - name: Setup doctl
-              uses: digitalocean/action-doctl@master
+            - name: Install doctl
+              uses: digitalocean/action-doctl@v2
               with:
                 token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
@@ -35,8 +35,8 @@ jobs:
                 passphrase: ${{ secrets.SSH_PASSPHRASE }}
                 port: ${{ secrets.SSH_PORT }}
 
-                source: compose.yml
-                target: ~
+                source: "compose.prod.yml,nginx"
+                target: ~/
 
             - name: SSH to server
               uses: appleboy/ssh-action@master
@@ -48,8 +48,10 @@ jobs:
                 port: ${{ secrets.SSH_PORT }}
 
                 script: |
-                  cd ~
+                  cd ~/
+                  mv compose.prod.yml compose.yml
+
                   docker login registry.digitalocean.com -u ${{ secrets.DIGITALOCEAN_EMAIL }} -p ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
                   docker compose pull
-                  docker compose up -d
+                  docker compose up --build -d

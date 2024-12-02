@@ -1,0 +1,17 @@
+server {
+    listen  8000;
+
+    location / {
+        proxy_pass http://ls-server:3333;
+    }
+
+    location /hls {
+        # Serve HLS fragments
+        types {
+            application/vnd.apple.mpegurl m3u8;
+            video/mp2t ts;
+        }
+        root /tmp;
+        add_header Cache-Control no-cache;
+    }
+}

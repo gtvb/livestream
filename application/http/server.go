@@ -58,7 +58,7 @@ func setupRouter(env ServerEnv) *gin.Engine {
 	users.PATCH("/unfollow/:user_id", env.unfollowUser)
 
 	// Pode ser removida mais tarde, apenas auxiliar
-	users.GET("/all", env.getAllUsers)
+	// users.GET("/all", env.getAllUsers)
 
 	streams := router.Group("/livestreams")
 	streams.POST("/create", env.createLiveStream)
@@ -69,7 +69,7 @@ func setupRouter(env ServerEnv) *gin.Engine {
 	streams.GET("/info/:id", env.getLiveStreamData)
 	streams.GET("/on_publish", env.validateStream)
 
-	streams.GET("/all", env.getAllStreams)
+	// streams.GET("/all", env.getAllStreams)
 
 	return router
 }

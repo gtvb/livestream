@@ -1,8 +1,8 @@
 services:
   ls-server: 
+    env_file:
+      - .env
     image: registry.digitalocean.com/gtcr/ls-server:latest
-    container_name: ls-server
-    build: .
     ports:
       - 3333:3333
     depends_on:
@@ -10,22 +10,21 @@ services:
     
   nginx-rtmp:
     image: registry.digitalocean.com/gtcr/nginx-rtmp:latest
-    container_name: nginx
-    build:
-      context: ./nginx
-      args:
-        ENABLED_MODULES: rtmp
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
     ports:
       - 80:80
       - 443:443
       - 1935:1935
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+
+      - ./nginx/api.lsstack.xyz:/etc/nginx/sites-available/api.lsstack.xyz
+      - ./nginx/rtmp.lsstack.xyz:/etc/nginx/sites-available/rtmp.lsstack.xyz
+      - ./nginx/api.lsstack.xyz:/etc/nginx/sites-enabled/api.lsstack.xyz
+      - ./nginx/rtmp.lsstack.xyz:/etc/nginx/sites-enabled/rtmp.lsstack.xyz
     depends_on:
       - ls-server
 
   mongo:
-    container_name: database
     image: mongo
     restart: always
     environment:
