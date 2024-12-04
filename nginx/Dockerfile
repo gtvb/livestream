@@ -77,3 +77,7 @@ RUN --mount=type=bind,target=/tmp/packages/,source=/tmp/packages/,from=builder \
            apt-get install --no-install-suggests --no-install-recommends -y /tmp/packages/nginx-module-${module}_${NGINX_VERSION}*.deb; \
        done \
     && rm -rf /var/lib/apt/lists/
+
+RUN mkdir -p /var/www/hls
+RUN chown -R nginx:nginx /var/www/hls
+RUN chmod -R 755 /var/www/hls
