@@ -1,8 +1,7 @@
 server {
     listen  80;
 
-    location /hls {
-        # Serve HLS fragments
+    location ^~ /hls {
         types {
             application/vnd.apple.mpegurl m3u8;
             video/mp2t ts;

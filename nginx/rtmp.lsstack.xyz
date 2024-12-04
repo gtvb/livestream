@@ -19,6 +19,6 @@ server {
         deny play all;
 
         hls on;
-        hls_path /tmp/hls;
+        hls_path /var/www/hls
     }
 }
