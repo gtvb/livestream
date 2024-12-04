@@ -1,6 +1,8 @@
 services:
   ls-server: 
     image: registry.digitalocean.com/gtcr/ls-server:latest
+    env_file:
+      - .env
     container_name: ls-server
     build: .
     ports:

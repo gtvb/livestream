@@ -1,10 +1,6 @@
 server {
     listen  80;
 
-    location / {
-        proxy_pass http://ls-server:3333;
-    }
-
     location /hls {
         # Serve HLS fragments
         types {
@@ -13,5 +9,9 @@ server {
         }
         root /tmp;
         add_header Cache-Control no-cache;
+    }
+    
+    location / {
+        proxy_pass http://api.lsstack.xyz:3333;
     }
 }

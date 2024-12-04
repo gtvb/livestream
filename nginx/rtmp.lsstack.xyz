@@ -1,26 +1,24 @@
-rtmp {
-    server {
-        listen 1935;
-        server_name rtmp.lsstack.xyz
+server {
+    listen 1935;
+    server_name rtmp.lsstack.xyz
 
-        application app {
-            live on;
-            deny play all;
+    application app {
+        live on;
+        deny play all;
 
-            notify_method get;
-            on_publish http://ls-server:3333/livestreams/on_publish;
-            on_publish_done http://ls-server:3333/livestreams/on_publish_done;
+        notify_method get;
+        on_publish http://api.lsstack.xyz:3333/livestreams/on_publish;
+        on_publish_done http://api.lsstack.xyz:3333/livestreams/on_publish_done;
 
-            push rtmp://ls-server:1935/hls-live;
-        }
+        push rtmp://api.lsstack.xyz:1935/hls-live;
+    }
 
-        application hls-live {
-            live on;
+    application hls-live {
+        live on;
 
-            deny play all;
+        deny play all;
 
-            hls on;
-            hls_path /tmp/hls;
-        }
+        hls on;
+        hls_path /tmp/hls;
     }
 }
